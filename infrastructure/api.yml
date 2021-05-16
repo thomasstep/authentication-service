@@ -1,0 +1,278 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: Authentication API Gateway and Lambdas
+
+Parameters:
+  SourceBucket:
+    Type: String
+    Description: S3 bucket with source
+    Default: source-bucket-s3bucket-1e6txaiywjvno
+
+  V1SignupKey:
+    Type: String
+    Description: S3 key with /v1/signup source
+    Default: authentication-service-api/v1/signup
+  V1SignupSourceVersion:
+    Type: String
+    Description: S3 version for /v1/signup source
+
+  V1SigninKey:
+    Type: String
+    Description: S3 key with /v1/signin source
+    Default: authentication-service-api/v1/signin
+  V1SigninSourceVersion:
+    Type: String
+    Description: S3 version for /v1/signin source
+
+  V1VerifyKey:
+    Type: String
+    Description: S3 key with /v1/verify source
+    Default: authentication-service-api/v1/verify
+  V1VerifySourceVersion:
+    Type: String
+    Description: S3 version for /v1/verify source
+
+  DDBTablesStackName:
+    Type: String
+    Description: Name of stack that exports DDB table names
+
+  # signup lambda env vars
+  VerificationRedirectUrl:
+    Type: String
+    Description: URL to redirect to after verification
+  SiteUrl:
+    Type: String
+    Description: URL of main site
+  EmailFromAddress:
+    Type: String
+    Description: Email address for verification email to come through
+  SendgridApiKey:
+    Type: AWS::SSM::Parameter::Value<String>
+    Description: Sendgrid API Key Parameter name
+
+Resources:
+  LambdaIamRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+            - Effect: Allow
+              Principal:
+                  Service:
+                    - lambda.amazonaws.com
+              Action:
+                - sts:AssumeRole
+      Description: Authenticaion Service Lambda Function IAM Role
+      RoleName: AuthenticationServiceLambdaFunctionRole
+      Policies:
+        - PolicyName: root
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - logs:*
+                  - dynamodb:*
+                Resource: '*'
+
+  SignupLambdaFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      Code:
+        S3Bucket: !Ref SourceBucket
+        S3Key: !Ref V1SignupKey
+        S3ObjectVersion: !Ref V1SignupSourceVersion
+      Description: /v1/signup
+      Environment:
+        Variables:
+          # AWS_REGION: !Ref AWS::Region !! This is available to all Lambdas by default
+          USER_TABLE_NAME:
+            Fn::ImportValue: !Sub "${DDBTablesStackName}-user-table-name"
+          VERIFICATION_TTL: "60"
+          VERIFICATION_REDIRECT_URL: !Ref VerificationRedirectUrl
+          SITE_URL: !Ref SiteUrl
+          EMAIL_FROM_ADDRESS: !Ref EmailFromAddress
+          SENDGRID_API_KEY: !Ref SendgridApiKey
+      Handler: index.handler
+      MemorySize: 128
+      Role: !GetAtt
+        - LambdaIamRole
+        - Arn
+      Runtime: nodejs12.x
+      Timeout: 10
+
+  SignupLambdaFunctionPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName: !GetAtt
+        - SignupLambdaFunction
+        - Arn
+      Principal: apigateway.amazonaws.com
+      SourceArn: !Join
+        - ""
+        - - "arn:aws:execute-api:"
+          - !Ref AWS::Region
+          - ":"
+          - !Ref AWS::AccountId
+          - ":"
+          - !Ref AuthenticationServiceApi
+          - /
+          - !Ref ApiGatewayStage
+          - /POST/v1/signup
+
+  SignupLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Join
+        - ""
+        - - "/aws/lambda/"
+          - !Ref SignupLambdaFunction
+      RetentionInDays: 7
+
+#-------------------------------------------------------------------------------
+# API GATEWAY RESOURCES
+#-------------------------------------------------------------------------------
+
+  AuthenticationServiceApi:
+    Type: AWS::ApiGateway::RestApi
+    Properties:
+      Description: API Gateway
+      EndpointConfiguration:
+        Types:
+          - REGIONAL
+      Name: AuthenticationServiceApiGateway
+      Policy:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal: "*"
+            Action: execute-api:Invoke
+            Resource: !Join
+              - ""
+              - - execute-api:/
+                - "*"
+
+  V1Resource:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      ParentId: !GetAtt
+        - AuthenticationServiceApi
+        - RootResourceId
+      PathPart: v1
+      RestApiId: !Ref AuthenticationServiceApi
+
+  V1SignupResource:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      ParentId: !Ref V1Resource
+      PathPart: signup
+      RestApiId: !Ref AuthenticationServiceApi
+
+  V1SignupMethod:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      ApiKeyRequired: true
+      AuthorizationType: NONE
+      HttpMethod: POST
+      Integration:
+        IntegrationHttpMethod: POST # NOTE: this has to be POST for Lambda integration
+        IntegrationResponses:
+          - StatusCode: "200"
+        Type: AWS_PROXY
+        Uri: !Join
+          - ""
+          - - "arn:aws:apigateway:"
+            - !Ref AWS::Region
+            - :lambda:path/2015-03-31/functions/
+            - !GetAtt
+              - SignupLambdaFunction
+              - Arn
+            - /invocations
+      MethodResponses:
+        - StatusCode: "200"
+      ResourceId: !Ref V1SignupResource
+      RestApiId: !Ref AuthenticationServiceApi
+
+  CloudWatchLoggingRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+            - Effect: Allow
+              Principal:
+                  Service:
+                    - apigateway.amazonaws.com
+              Action:
+                - sts:AssumeRole
+      Description: API Gateway Logging IAM Role
+      ManagedPolicyArns:
+        # Write Lambda's logs to CloudWatch
+        - arn:aws:iam::aws:policy/service-role/AmazonAPIGatewayPushToCloudWatchLogs
+
+  ApiGatewayLogging:
+    Type: AWS::ApiGateway::Account
+    Properties:
+      CloudWatchRoleArn: !GetAtt
+        - CloudWatchLoggingRole
+        - Arn
+    DependsOn: AuthenticationServiceApi
+
+  ApiGatewayDeployment:
+    Type: AWS::ApiGateway::Deployment
+    Properties:
+      Description: Original starter template deployment
+      RestApiId: !Ref AuthenticationServiceApi
+    DependsOn: V1SignupMethod
+
+  ApiGatewayStage:
+    Type: AWS::ApiGateway::Stage
+    Properties:
+      DeploymentId: !Ref ApiGatewayDeployment
+      Description: Original starter template stage
+      MethodSettings:
+        - HttpMethod: POST
+          LoggingLevel: INFO
+          MetricsEnabled: true
+          ResourcePath: /~1v1~1signup
+      RestApiId: !Ref AuthenticationServiceApi
+      StageName: prod # IMPORTANT: don't change this w/o also changing log group
+    DependsOn: ApiGatewayLogGroup
+
+  ApiGatewayLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Join
+        - ""
+        - - "API-Gateway-Execution-Logs_"
+          - !Ref AuthenticationServiceApi
+          - /prod # IMPORTANT: this has to be the same as StageName
+      RetentionInDays: 7
+
+  AuthenticationServiceApiKey:
+    Type: AWS::ApiGateway::ApiKey
+    Properties:
+      Description: API key for myself
+      Enabled: true
+      StageKeys:
+        - RestApiId: !Ref AuthenticationServiceApi
+          StageName: !Ref ApiGatewayStage
+
+  AuthenticationServiceUsagePlan:
+    Type: AWS::ApiGateway::UsagePlan
+    Properties:
+      ApiStages:
+        - ApiId: !Ref AuthenticationServiceApi
+          Stage: !Ref ApiGatewayStage
+      Description: Usage Plan for myself
+      Throttle:
+          BurstLimit: 5000
+          RateLimit: 10000
+
+  ApiKeyAndUsagePlanConnection:
+    Type: AWS::ApiGateway::UsagePlanKey
+    Properties:
+      KeyId: !Ref AuthenticationServiceApiKey
+      KeyType: API_KEY
+      UsagePlanId: !Ref AuthenticationServiceUsagePlan

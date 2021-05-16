@@ -1,0 +1,28 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: Authentication service DDB Tables
+
+Resources:
+  UserTable:
+    Type: AWS::DynamoDB::Table
+    Properties: 
+      AttributeDefinitions: 
+        - AttributeName: email
+          AttributeType: S
+        - AttributeName: status
+          AttributeType: S
+      BillingMode: PAY_PER_REQUEST
+      KeySchema: 
+        - AttributeName: email
+          KeyType: HASH
+        - AttributeName: status
+          KeyType: RANGE
+      TimeToLiveSpecification:
+        AttributeName: ttl
+        Enabled: True
+
+Outputs:
+  UserTableName:
+    Description: The created user table name
+    Value: !Ref UserTable
+    Export:
+      Name: !Sub ${AWS::StackName}-user-table-name
