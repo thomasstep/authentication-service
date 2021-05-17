@@ -15,6 +15,14 @@ Parameters:
     Type: String
     Description: S3 version for /v1/signup source
 
+  V1VerifyKey:
+    Type: String
+    Description: S3 key with /v1/verify source
+    Default: authentication-service-api/v1/verify
+  V1VerifySourceVersion:
+    Type: String
+    Description: S3 version for /v1/verify source
+
   V1SigninKey:
     Type: String
     Description: S3 key with /v1/signin source
@@ -23,13 +31,21 @@ Parameters:
     Type: String
     Description: S3 version for /v1/signin source
 
-  V1VerifyKey:
+  V1SignoutKey:
     Type: String
-    Description: S3 key with /v1/verify source
-    Default: authentication-service-api/v1/verify
-  V1VerifySourceVersion:
+    Description: S3 key with /v1/signout source
+    Default: authentication-service-api/v1/signout
+  V1SignoutSourceVersion:
     Type: String
-    Description: S3 version for /v1/verify source
+    Description: S3 version for /v1/signout source
+
+  V1ResetPasswordKey:
+    Type: String
+    Description: S3 key with /v1/reset-password source
+    Default: authentication-service-api/v1/reset-password
+  V1ResetPasswordSourceVersion:
+    Type: String
+    Description: S3 version for /v1/reset-password source
 
   DDBTablesStackName:
     Type: String
@@ -101,6 +117,70 @@ Resources:
       Runtime: nodejs12.x
       Timeout: 10
 
+  VerifyLambdaFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      Code:
+        S3Bucket: !Ref SourceBucket
+        S3Key: !Ref V1VerifyKey
+        S3ObjectVersion: !Ref V1VerifySourceVersion
+      Description: /v1/verify
+      Handler: index.handler
+      MemorySize: 128
+      Role: !GetAtt
+        - LambdaIamRole
+        - Arn
+      Runtime: nodejs12.x
+      Timeout: 10
+
+  SigninLambdaFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      Code:
+        S3Bucket: !Ref SourceBucket
+        S3Key: !Ref V1SigninKey
+        S3ObjectVersion: !Ref V1SigninSourceVersion
+      Description: /v1/signin
+      Handler: index.handler
+      MemorySize: 128
+      Role: !GetAtt
+        - LambdaIamRole
+        - Arn
+      Runtime: nodejs12.x
+      Timeout: 10
+
+  SignoutLambdaFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      Code:
+        S3Bucket: !Ref SourceBucket
+        S3Key: !Ref V1SignoutKey
+        S3ObjectVersion: !Ref V1SignoutSourceVersion
+      Description: /v1/signout
+      Handler: index.handler
+      MemorySize: 128
+      Role: !GetAtt
+        - LambdaIamRole
+        - Arn
+      Runtime: nodejs12.x
+      Timeout: 10
+
+  ResetPasswordLambdaFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      Code:
+        S3Bucket: !Ref SourceBucket
+        S3Key: !Ref V1ResetPasswordKey
+        S3ObjectVersion: !Ref V1ResetPasswordSourceVersion
+      Description: /v1/reset-password
+      Handler: index.handler
+      MemorySize: 128
+      Role: !GetAtt
+        - LambdaIamRole
+        - Arn
+      Runtime: nodejs12.x
+      Timeout: 10
+
   SignupLambdaFunctionPermission:
     Type: AWS::Lambda::Permission
     Properties:
@@ -121,6 +201,87 @@ Resources:
           - !Ref ApiGatewayStage
           - /POST/v1/signup
 
+  VerifyLambdaFunctionPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName: !GetAtt
+        - VerifyLambdaFunction
+        - Arn
+      Principal: apigateway.amazonaws.com
+      SourceArn: !Join
+        - ""
+        - - "arn:aws:execute-api:"
+          - !Ref AWS::Region
+          - ":"
+          - !Ref AWS::AccountId
+          - ":"
+          - !Ref AuthenticationServiceApi
+          - /
+          - !Ref ApiGatewayStage
+          - /POST/v1/verify
+
+  SigninLambdaFunctionPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName: !GetAtt
+        - SigninLambdaFunction
+        - Arn
+      Principal: apigateway.amazonaws.com
+      SourceArn: !Join
+        - ""
+        - - "arn:aws:execute-api:"
+          - !Ref AWS::Region
+          - ":"
+          - !Ref AWS::AccountId
+          - ":"
+          - !Ref AuthenticationServiceApi
+          - /
+          - !Ref ApiGatewayStage
+          - /POST/v1/signin
+
+  SignoutLambdaFunctionPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName: !GetAtt
+        - SignoutLambdaFunction
+        - Arn
+      Principal: apigateway.amazonaws.com
+      SourceArn: !Join
+        - ""
+        - - "arn:aws:execute-api:"
+          - !Ref AWS::Region
+          - ":"
+          - !Ref AWS::AccountId
+          - ":"
+          - !Ref AuthenticationServiceApi
+          - /
+          - !Ref ApiGatewayStage
+          - /POST/v1/signout
+
+
+  ResetPasswordLambdaFunctionPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName: !GetAtt
+        - ResetPasswordLambdaFunction
+        - Arn
+      Principal: apigateway.amazonaws.com
+      SourceArn: !Join
+        - ""
+        - - "arn:aws:execute-api:"
+          - !Ref AWS::Region
+          - ":"
+          - !Ref AWS::AccountId
+          - ":"
+          - !Ref AuthenticationServiceApi
+          - /
+          - !Ref ApiGatewayStage
+          - /POST/v1/reset-password
+
   SignupLogGroup:
     Type: AWS::Logs::LogGroup
     Properties:
@@ -128,6 +289,42 @@ Resources:
         - ""
         - - "/aws/lambda/"
           - !Ref SignupLambdaFunction
+      RetentionInDays: 7
+
+  SigninLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Join
+        - ""
+        - - "/aws/lambda/"
+          - !Ref SigninLambdaFunction
+      RetentionInDays: 7
+
+  SignoutLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Join
+        - ""
+        - - "/aws/lambda/"
+          - !Ref SignoutLambdaFunction
+      RetentionInDays: 7
+
+  VerifyLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Join
+        - ""
+        - - "/aws/lambda/"
+          - !Ref VerifyLambdaFunction
+      RetentionInDays: 7
+
+  ResetPasswordLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Join
+        - ""
+        - - "/aws/lambda/"
+          - !Ref ResetPasswordLambdaFunction
       RetentionInDays: 7
 
 #-------------------------------------------------------------------------------
@@ -169,6 +366,34 @@ Resources:
       PathPart: signup
       RestApiId: !Ref AuthenticationServiceApi
 
+  V1VerifyResource:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      ParentId: !Ref V1Resource
+      PathPart: verify
+      RestApiId: !Ref AuthenticationServiceApi
+
+  V1SigninResource:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      ParentId: !Ref V1Resource
+      PathPart: signin
+      RestApiId: !Ref AuthenticationServiceApi
+
+  V1SignoutResource:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      ParentId: !Ref V1Resource
+      PathPart: signout
+      RestApiId: !Ref AuthenticationServiceApi
+
+  V1ResetPasswordResource:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      ParentId: !Ref V1Resource
+      PathPart: reset-password
+      RestApiId: !Ref AuthenticationServiceApi
+
   V1SignupMethod:
     Type: AWS::ApiGateway::Method
     Properties:
@@ -192,6 +417,106 @@ Resources:
       MethodResponses:
         - StatusCode: "200"
       ResourceId: !Ref V1SignupResource
+      RestApiId: !Ref AuthenticationServiceApi
+
+  V1VerifyMethod:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      ApiKeyRequired: true
+      AuthorizationType: NONE
+      HttpMethod: POST
+      Integration:
+        IntegrationHttpMethod: POST # NOTE: this has to be POST for Lambda integration
+        IntegrationResponses:
+          - StatusCode: "200"
+        Type: AWS_PROXY
+        Uri: !Join
+          - ""
+          - - "arn:aws:apigateway:"
+            - !Ref AWS::Region
+            - :lambda:path/2015-03-31/functions/
+            - !GetAtt
+              - VerifyLambdaFunction
+              - Arn
+            - /invocations
+      MethodResponses:
+        - StatusCode: "200"
+      ResourceId: !Ref V1VerifyResource
+      RestApiId: !Ref AuthenticationServiceApi
+
+  V1SigninMethod:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      ApiKeyRequired: true
+      AuthorizationType: NONE
+      HttpMethod: POST
+      Integration:
+        IntegrationHttpMethod: POST # NOTE: this has to be POST for Lambda integration
+        IntegrationResponses:
+          - StatusCode: "200"
+        Type: AWS_PROXY
+        Uri: !Join
+          - ""
+          - - "arn:aws:apigateway:"
+            - !Ref AWS::Region
+            - :lambda:path/2015-03-31/functions/
+            - !GetAtt
+              - SigninLambdaFunction
+              - Arn
+            - /invocations
+      MethodResponses:
+        - StatusCode: "200"
+      ResourceId: !Ref V1SigninResource
+      RestApiId: !Ref AuthenticationServiceApi
+
+  V1SignoutMethod:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      ApiKeyRequired: true
+      AuthorizationType: NONE
+      HttpMethod: POST
+      Integration:
+        IntegrationHttpMethod: POST # NOTE: this has to be POST for Lambda integration
+        IntegrationResponses:
+          - StatusCode: "200"
+        Type: AWS_PROXY
+        Uri: !Join
+          - ""
+          - - "arn:aws:apigateway:"
+            - !Ref AWS::Region
+            - :lambda:path/2015-03-31/functions/
+            - !GetAtt
+              - SignoutLambdaFunction
+              - Arn
+            - /invocations
+      MethodResponses:
+        - StatusCode: "200"
+      ResourceId: !Ref V1SignoutResource
+      RestApiId: !Ref AuthenticationServiceApi
+
+  V1ResetPasswordMethod:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      ApiKeyRequired: true
+      AuthorizationType: NONE
+      HttpMethod: POST
+      Integration:
+        IntegrationHttpMethod: POST # NOTE: this has to be POST for Lambda integration
+        IntegrationResponses:
+          - StatusCode: "200"
+        Type: AWS_PROXY
+        Uri: !Join
+          - ""
+          - - "arn:aws:apigateway:"
+            - !Ref AWS::Region
+            - :lambda:path/2015-03-31/functions/
+            - !GetAtt
+              - ResetPasswordLambdaFunction
+              - Arn
+            - /invocations
+      MethodResponses:
+        - StatusCode: "200"
+      ResourceId: !Ref V1ResetPasswordResource
       RestApiId: !Ref AuthenticationServiceApi
 
   CloudWatchLoggingRole:
@@ -236,6 +561,22 @@ Resources:
           LoggingLevel: INFO
           MetricsEnabled: true
           ResourcePath: /~1v1~1signup
+        - HttpMethod: POST
+          LoggingLevel: INFO
+          MetricsEnabled: true
+          ResourcePath: /~1v1~1verify
+        - HttpMethod: POST
+          LoggingLevel: INFO
+          MetricsEnabled: true
+          ResourcePath: /~1v1~1signin
+        - HttpMethod: POST
+          LoggingLevel: INFO
+          MetricsEnabled: true
+          ResourcePath: /~1v1~1signout
+        - HttpMethod: POST
+          LoggingLevel: INFO
+          MetricsEnabled: true
+          ResourcePath: /~1v1~1reset-password
       RestApiId: !Ref AuthenticationServiceApi
       StageName: prod # IMPORTANT: don't change this w/o also changing log group
     DependsOn: ApiGatewayLogGroup
