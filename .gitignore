@@ -106,3 +106,5 @@ dist
 # AWS deployment
 *.zip
 *.swp
+export-env-vars.sh
+
