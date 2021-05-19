@@ -1,0 +1,9 @@
+const CONSTANTS = {
+  UNVERIFIED_USER_SORT_KEY: 'unverified',
+  ACTIVE_USER_SORT_KEY: 'active',
+  REFRESH_PASSWORD_SORT_KEY: 'refreshing',
+  DEFAULT_VERIFICATION_TTL: '60',
+  DEFAULT_REFRESH_PASSWORD_TTL: '60',
+};
+
+module.exports = CONSTANTS;

@@ -109,7 +109,7 @@ Resources:
           SITE_URL: !Ref SiteUrl
           EMAIL_FROM_ADDRESS: !Ref EmailFromAddress
           SENDGRID_API_KEY: !Ref SendgridApiKey
-      Handler: index.handler
+      Handler: src/v1/signup/index.handler
       MemorySize: 128
       Role: !GetAtt
         - LambdaIamRole

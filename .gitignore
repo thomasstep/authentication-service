@@ -107,4 +107,4 @@ dist
 *.zip
 *.swp
 export-env-vars.sh
-
+.DS_Store

@@ -48,6 +48,7 @@ exports.handler = async function (event, context, callback) {
     }
     
     // create user in verification table
+    // want a 6 digit verification token
     const verificationToken = Math.floor(Math.random() * 999999).toString();
     const createUserQuery = {
       TableName: process.env.USER_TABLE_NAME,
@@ -56,7 +57,7 @@ exports.handler = async function (event, context, callback) {
           S: email,
         },
         status: {
-          S: 'unverified',
+          S: 'unverified', // TODO reference this from a const file
         },
         token: {
           S: verificationToken,
@@ -73,7 +74,7 @@ exports.handler = async function (event, context, callback) {
 
     // send verification email
     const redirectUrl = process.env.VERIFICATION_REDIRECT_URL
-    const verificationUrl = `${process.env.SITE_URL}/verify?verificationToken=${verificationToken}&redirectUrl=${redirectUrl}`;
+    const verificationUrl = `${process.env.SITE_URL}/verify?email=${email}=verificationToken=${verificationToken}&redirectUrl=${redirectUrl}`;
     const msg = {
       to: email,
       from: process.env.EMAIL_FROM_ADDRESS,
@@ -100,7 +101,7 @@ exports.handler = async function (event, context, callback) {
     ]);
     
     const data = {
-      statusCode: 204,
+      statusCode: 201,
     };
     callback(null, data);
     return;
