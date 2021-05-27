@@ -37,6 +37,8 @@ Resources:
                   - iam:*
                   - codebuild:*
                   - logs:*
+                  - ssm:Get*
+                  - ssm:List*
                 Resource: '*'
   CodeBuildCredentials:
     Type: AWS::CodeBuild::SourceCredential
