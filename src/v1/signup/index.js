@@ -4,6 +4,7 @@ const {
   getUser,
 } = require('../../utils/database');
 const {
+  ACTIVE_USER_SORT_KEY,
   UNVERIFIED_USER_SORT_KEY,
 } = require('../../utils/constants');
 
@@ -26,7 +27,7 @@ exports.handler = async function (event, context, callback) {
       }
     }
 
-    const checkUserData = await getUser(email);
+    const checkUserData = await getUser(email, ACTIVE_USER_SORT_KEY);
     console.log(checkUserData);
     if (checkUserData.Item) {
       throw new Error('User already exists');
@@ -64,7 +65,7 @@ exports.handler = async function (event, context, callback) {
     sgMail.setApiKey(process.env.SENDGRID_API_KEY);
 
     await Promise.all([
-      createUser(UNVERIFIED_USER_SORT_KEY, email, additionalCreateUserColumns),
+      createUser(email, UNVERIFIED_USER_SORT_KEY, additionalCreateUserColumns),
       sgMail.send(msg),
     ]);
     

@@ -1,15 +1,20 @@
 const {
-  DynamoDBClient,
-  GetItemCommand,
-  PutItemCommand,
-  DeleteItemCommand,
-} = require('@aws-sdk/client-dynamodb');
+  createUser,
+  deleteUser,
+  getUser,
+} = require('../../utils/database');
+const {
+  ACTIVE_USER_SORT_KEY,
+  UNVERIFIED_USER_SORT_KEY,
+} = require('../../utils/constants');
 
 exports.handler = async function (event, context, callback) {
   try {
     let email = null;
     let verificationToken = null;
     let redirectUrl = null;
+
+    console.log(JSON.stringify(event));
     
     if (event && event.queryStringParameters) {
       email = event.queryStringParameters.email;
@@ -22,7 +27,7 @@ exports.handler = async function (event, context, callback) {
       || verificationToken === null
       || redirectUrl === null
     ) {
-      console.error('Missing input');
+      console.error(`Missing input email: ${email} token: ${verificationToken} redirect: ${redirectUrl}`);
       const errorPayload = {
         errorType: 'BadRequest',
         httpStatus: 400,
@@ -33,75 +38,27 @@ exports.handler = async function (event, context, callback) {
       return;
     }
 
-    // get email from ddb with filter unverified
-    const client = new DynamoDBClient({
-      region: process.env.AWS_REGION || 'us-east-1',
-    });
-
-    const getUnverifiedQuery = {
-      TableName: process.env.USER_TABLE_NAME,
-      Key: {
-        email: {
-          S: email,
-        },
-        status: {
-          S: 'unverified', // TODO reference this from a const file
-        },
-      },
-    };
-    const getUnverifiedCommand = new GetItemCommand(getUnverifiedQuery);
-    const getUnverifiedData = await client.send(getUnverifiedCommand);
-    if (!getUnverifiedData.Item) {
-      throw new Error('No existing verification entry');
-    }
-
-    const existingToken = getUnverifiedData.Item.token;
-
+    const getUnverifiedData = await getUser(email, UNVERIFIED_USER_SORT_KEY);
+    const existingToken = getUnverifiedData?.Item?.token?.S;
     if (!existingToken) {
       throw new Error('Token does not exist. Something weird is going on');
     }
 
     // if token doesn't match throw error
-    if (token !== existingToken) {
+    if (verificationToken !== existingToken) {
+      console.error(`Invalid token. Provided: ${verificationToken}. Existing: ${existingToken}`);
       throw new Error('Invalid token');
     }
 
-    // if token matches
-    // change entry sort key to active
-    // redirect
-    const activateUserQuery = {
-      TableName: process.env.USER_TABLE_NAME,
-      Item: {
-        email: {
-          S: email,
-        },
-        status: {
-          S: 'active', // TODO reference this from a const file
-        },
-        password: {
-          S: password,
-        },
-      },
+    const hashedPassword = getUnverifiedData?.Item?.hashedPassword?.S;
+    const additionalCreateUserColumns = {
+      hashedPassword,
     };
 
-    const deleteUnverifiedQuery = {
-      TableName: process.env.USER_TABLE_NAME,
-      Key: {
-        email: {
-          S: email,
-        },
-        status: {
-          S: 'unverified', // TODO reference this from a const file
-        },
-      },
-    };
-
-
-    const activateUserCommand = new PutItemCommand(activateUserQuery);
-    const deleteUnverifiedCommand = new PutItemCommand(deleteUnverifiedQuery);
-
-    client.send(activateUserCommand);
-    client.send(deleteUnverifiedCommand);
+    await Promise.all([
+      createUser(email, ACTIVE_USER_SORT_KEY, additionalCreateUserColumns),
+      deleteUser(email, UNVERIFIED_USER_SORT_KEY);
+    ]);
 
     const data = {
       statusCode: 204,

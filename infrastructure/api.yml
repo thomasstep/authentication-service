@@ -64,6 +64,7 @@ Parameters:
   SendgridApiKey:
     Type: AWS::SSM::Parameter::Value<String>
     Description: Sendgrid API Key Parameter name
+    Default: sendgrid-api-key
 
 Resources:
   LambdaIamRole:
@@ -114,7 +115,7 @@ Resources:
       Role: !GetAtt
         - LambdaIamRole
         - Arn
-      Runtime: nodejs12.x
+      Runtime: nodejs14.x
       Timeout: 10
 
   VerifyLambdaFunction:
@@ -125,12 +126,17 @@ Resources:
         S3Key: !Ref V1VerifyKey
         S3ObjectVersion: !Ref V1VerifySourceVersion
       Description: /v1/verify
-      Handler: index.handler
+      Environment:
+        Variables:
+          # AWS_REGION: !Ref AWS::Region !! This is available to all Lambdas by default
+          USER_TABLE_NAME:
+            Fn::ImportValue: !Sub "${DDBTablesStackName}-user-table-name"
+      Handler: src/v1/verify/index.handler
       MemorySize: 128
       Role: !GetAtt
         - LambdaIamRole
         - Arn
-      Runtime: nodejs12.x
+      Runtime: nodejs14.x
       Timeout: 10
 
   SigninLambdaFunction:
@@ -141,12 +147,17 @@ Resources:
         S3Key: !Ref V1SigninKey
         S3ObjectVersion: !Ref V1SigninSourceVersion
       Description: /v1/signin
-      Handler: index.handler
+      Environment:
+        Variables:
+          # AWS_REGION: !Ref AWS::Region !! This is available to all Lambdas by default
+          USER_TABLE_NAME:
+            Fn::ImportValue: !Sub "${DDBTablesStackName}-user-table-name"
+      Handler: src/v1/signin/index.handler
       MemorySize: 128
       Role: !GetAtt
         - LambdaIamRole
         - Arn
-      Runtime: nodejs12.x
+      Runtime: nodejs14.x
       Timeout: 10
 
   SignoutLambdaFunction:
@@ -157,12 +168,17 @@ Resources:
         S3Key: !Ref V1SignoutKey
         S3ObjectVersion: !Ref V1SignoutSourceVersion
       Description: /v1/signout
-      Handler: index.handler
+      Environment:
+        Variables:
+          # AWS_REGION: !Ref AWS::Region !! This is available to all Lambdas by default
+          USER_TABLE_NAME:
+            Fn::ImportValue: !Sub "${DDBTablesStackName}-user-table-name"
+      Handler: src/v1/signout/index.handler
       MemorySize: 128
       Role: !GetAtt
         - LambdaIamRole
         - Arn
-      Runtime: nodejs12.x
+      Runtime: nodejs14.x
       Timeout: 10
 
   ResetPasswordLambdaFunction:
@@ -173,12 +189,17 @@ Resources:
         S3Key: !Ref V1ResetPasswordKey
         S3ObjectVersion: !Ref V1ResetPasswordSourceVersion
       Description: /v1/reset-password
-      Handler: index.handler
+      Environment:
+        Variables:
+          # AWS_REGION: !Ref AWS::Region !! This is available to all Lambdas by default
+          USER_TABLE_NAME:
+            Fn::ImportValue: !Sub "${DDBTablesStackName}-user-table-name"
+      Handler: src/v1/reset-password/index.handler
       MemorySize: 128
       Role: !GetAtt
         - LambdaIamRole
         - Arn
-      Runtime: nodejs12.x
+      Runtime: nodejs14.x
       Timeout: 10
 
   SignupLambdaFunctionPermission:
@@ -219,7 +240,7 @@ Resources:
           - !Ref AuthenticationServiceApi
           - /
           - !Ref ApiGatewayStage
-          - /POST/v1/verify
+          - /GET/v1/verify
 
   SigninLambdaFunctionPermission:
     Type: AWS::Lambda::Permission
@@ -424,7 +445,7 @@ Resources:
     Properties:
       ApiKeyRequired: true
       AuthorizationType: NONE
-      HttpMethod: POST
+      HttpMethod: GET
       Integration:
         IntegrationHttpMethod: POST # NOTE: this has to be POST for Lambda integration
         IntegrationResponses:
@@ -549,7 +570,12 @@ Resources:
     Properties:
       Description: Original starter template deployment
       RestApiId: !Ref AuthenticationServiceApi
-    DependsOn: V1SignupMethod
+    DependsOn:
+      - V1SignupMethod
+      - V1VerifyMethod
+      - V1SigninMethod
+      - V1SignoutMethod
+      - V1ResetPasswordMethod
 
   ApiGatewayStage:
     Type: AWS::ApiGateway::Stage

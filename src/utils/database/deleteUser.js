@@ -1,10 +1,10 @@
 const {
-  GetItemCommand,
+  DeleteItemCommand,
 } = require('@aws-sdk/client-dynamodb');
 const { client } = require('./databaseSession');
 
-async function getUser(email, status) {
-  const getUserQuery = {
+async function deleteUser(email, status) {
+  const deleteUserQuery = {
     TableName: process.env.USER_TABLE_NAME,
     Key: {
       email: {
@@ -15,11 +15,11 @@ async function getUser(email, status) {
       },
     },
   };
-  const getUserCommand = new GetItemCommand(getUserQuery);
-  const getUserData = await client.send(getUserCommand);
-  return getUserData;
+  const deleteUserCommand = new DeleteItemCommand(deleteUserQuery);
+  const deleteUserData = await client.send(deleteUserCommand);
+  return deleteUserData;
 }
 
 module.exports = {
-  getUser,
+  deleteUser,
 };

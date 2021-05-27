@@ -1,12 +1,12 @@
 #!/bin/zsh
 
 # Change these to the correct values
-API_ROUTE=v1/signup
+API_ROUTE=v1/verify
 SOURCE_BUCKET_NAME=source-bucket-s3bucket-1e6txaiywjvno
 SOURCE_KEY=green-things-auth/$API_ROUTE
 TEMPLATE_PATH=./infrastructure/api.yml
 STACK_NAME=green-things-auth
-STACK_SOURCE_VERSION_PARAMETER_NAME=V1SignupSourceVersion
+STACK_SOURCE_VERSION_PARAMETER_NAME=V1VerifySourceVersion
 
 # Create common node_modules folder and copy all modules
 mkdir ./node_modules
