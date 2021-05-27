@@ -54,7 +54,8 @@ phases:
 # Verify
 #
       - mkdir $CODEBUILD_SRC_DIR/node_modules
-      - rsync -a $CODEBUILD_SRC_DIR/src/$VERIFY_ROUTE/node_modules/ $CODEBUILD_SRC_DIR/node_modules
+      # TODO uncomment following line if/when verify route has node_modules
+      #- rsync -a $CODEBUILD_SRC_DIR/src/$VERIFY_ROUTE/node_modules/ $CODEBUILD_SRC_DIR/node_modules
       - rsync -a $CODEBUILD_SRC_DIR/src/utils/node_modules/ $CODEBUILD_SRC_DIR/node_modules
       - zip -r9 deployment-package $CODEBUILD_SRC_DIR/src/$VERIFY_ROUTE/index.js $CODEBUILD_SRC_DIR/node_modules $CODEBUILD_SRC_DIR/src/utils &>/dev/null
       - aws s3 cp deployment-package.zip s3://$SOURCE_BUCKET_NAME/$VERIFY_PARAMETER_NAME &>/dev/null
