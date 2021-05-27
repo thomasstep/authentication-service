@@ -1,7 +1,7 @@
 Parameters:
   GitHubUrl:
     Type: String
-    Description: URL for GitHub repo i.e. https://github.com/username/repository.git
+    Description: URL for GitHub repo i.e. https://github.com/username/repository
   GitHubAccessToken:
     Type: AWS::SSM::Parameter::Value<String>
     Description: Name of parameter with GitHub access token
@@ -36,6 +36,7 @@ Resources:
                   - lambda:*
                   - iam:*
                   - codebuild:*
+                  - logs:*
                 Resource: '*'
   CodeBuildCredentials:
     Type: AWS::CodeBuild::SourceCredential
@@ -47,7 +48,6 @@ Resources:
     DependsOn: CodeBuildCredentials
     Type: AWS::CodeBuild::Project
     Properties:
-      Name: serverless-api-codebuild
       Description: CodeBuild for authentication service
       Triggers:
         BuildType: BUILD
@@ -63,3 +63,8 @@ Resources:
         Type: GITHUB
         Location: !Ref GitHubUrl
       TimeoutInMinutes: 10
+  CodeBuildLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub "/aws/codebuild/${CodeBuild}"
+      RetentionInDays: 7
