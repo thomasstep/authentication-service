@@ -1,4 +1,5 @@
 const sgMail = require('@sendgrid/mail');
+const bcrypt = require('bcrypt');
 const {
   createUser,
   getUser,
@@ -27,6 +28,10 @@ exports.handler = async function (event, context, callback) {
       }
     }
 
+    const salt = bcrypt.genSaltSync();
+    const hashedPassword = bcrypt.hashSync(password, salt);
+    console.log(`HASHPASS: ${hashedPassword}`);
+
     const checkUserData = await getUser(email, ACTIVE_USER_SORT_KEY);
     console.log(checkUserData);
     if (checkUserData.Item) {
@@ -38,7 +43,7 @@ exports.handler = async function (event, context, callback) {
     const verificationToken = Math.floor(Math.random() * 999999).toString();
     const additionalCreateUserColumns = {
       verificationToken,
-      hashedPassword: password,
+      hashedPassword,
     };
 
     // send verification email

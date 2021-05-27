@@ -1,0 +1,65 @@
+Parameters:
+  GitHubUrl:
+    Type: String
+    Description: URL for GitHub repo i.e. https://github.com/username/repository.git
+  GitHubAccessToken:
+    Type: AWS::SSM::Parameter::Value<String>
+    Description: Name of parameter with GitHub access token
+    Default: green-things-auth-github-token
+    NoEcho: True
+
+Resources:
+  CodeBuildRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+            - Effect: Allow
+              Principal:
+                  Service:
+                    - codebuild.amazonaws.com
+              Action:
+                - sts:AssumeRole
+      Description: IAM Role for MyCodePipeline
+      Path: '/'
+      Policies:
+        - PolicyName: root
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - s3:*
+                  - cloudformation:*
+                  - apigateway:*
+                  - lambda:*
+                  - iam:*
+                  - codebuild:*
+                Resource: '*'
+  CodeBuildCredentials:
+    Type: AWS::CodeBuild::SourceCredential
+    Properties:
+      ServerType: GITHUB
+      AuthType: PERSONAL_ACCESS_TOKEN
+      Token: !Ref GitHubAccessToken
+  CodeBuild:
+    DependsOn: CodeBuildCredentials
+    Type: AWS::CodeBuild::Project
+    Properties:
+      Name: serverless-api-codebuild
+      Description: CodeBuild for authentication service
+      Triggers:
+        BuildType: BUILD
+        Webhook: True
+      ServiceRole: !GetAtt CodeBuildRole.Arn
+      Artifacts:
+        Type: NO_ARTIFACTS
+      Environment:
+        Type: LINUX_CONTAINER
+        ComputeType: BUILD_GENERAL1_SMALL
+        Image: aws/codebuild/standard:4.0
+      Source:
+        Type: GITHUB
+        Location: !Ref GitHubUrl
+      TimeoutInMinutes: 10

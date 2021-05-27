@@ -9,6 +9,8 @@
   "author": "Thomas Step",
   "license": "ISC",
   "dependencies": {
-    "@aws-sdk/client-dynamodb": "^3.16.0"
+    "bcrypt": "^5.0.1",
+    "cookie": "^0.4.1",
+    "jsonwebtoken": "^8.5.1"
   }
 }

@@ -9,7 +9,7 @@
   "author": "Thomas Step",
   "license": "ISC",
   "dependencies": {
-    "@aws-sdk/client-dynamodb": "^3.16.0",
-    "@sendgrid/mail": "^7.4.4"
+    "@sendgrid/mail": "^7.4.4",
+    "bcrypt": "^5.0.1"
   }
 }
