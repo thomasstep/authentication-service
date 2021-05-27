@@ -44,8 +44,8 @@ phases:
 # Signup
 #
       - mkdir $CODEBUILD_SRC_DIR/node_modules
-      - rsync -a $CODEBUILD_SRC_DIR/src/$SIGNUP_ROUTE/node_modules/ $CODEBUILD_SRC_DIR/node_modules
-      - rsync -a $CODEBUILD_SRC_DIR/src/utils/node_modules/ $CODEBUILD_SRC_DIR/node_modules
+      - rsync -a $CODEBUILD_SRC_DIR/src/$SIGNUP_ROUTE/node_modules/ $CODEBUILD_SRC_DIR/node_modules &>/dev/null
+      - rsync -a $CODEBUILD_SRC_DIR/src/utils/node_modules/ $CODEBUILD_SRC_DIR/node_modules &>/dev/null
       - zip -r9 deployment-package $CODEBUILD_SRC_DIR/src/$SIGNUP_ROUTE/index.js $CODEBUILD_SRC_DIR/node_modules $CODEBUILD_SRC_DIR/src/utils &>/dev/null
       - aws s3 cp deployment-package.zip s3://$SOURCE_BUCKET_NAME/$SIGNUP_PARAMETER_NAME &>/dev/null
       - SIGNUP_S3_VERSION=$(aws s3api get-object --bucket $SOURCE_BUCKET_NAME --key $SIGNUP_PARAMETER_NAME getobjectoutfile | jq -r '.VersionId')
@@ -55,8 +55,8 @@ phases:
 #
       - mkdir $CODEBUILD_SRC_DIR/node_modules
       # TODO uncomment following line if/when verify route has node_modules
-      #- rsync -a $CODEBUILD_SRC_DIR/src/$VERIFY_ROUTE/node_modules/ $CODEBUILD_SRC_DIR/node_modules
-      - rsync -a $CODEBUILD_SRC_DIR/src/utils/node_modules/ $CODEBUILD_SRC_DIR/node_modules
+      #- rsync -a $CODEBUILD_SRC_DIR/src/$VERIFY_ROUTE/node_modules/ $CODEBUILD_SRC_DIR/node_modules &>/dev/null
+      - rsync -a $CODEBUILD_SRC_DIR/src/utils/node_modules/ $CODEBUILD_SRC_DIR/node_modules &>/dev/null
       - zip -r9 deployment-package $CODEBUILD_SRC_DIR/src/$VERIFY_ROUTE/index.js $CODEBUILD_SRC_DIR/node_modules $CODEBUILD_SRC_DIR/src/utils &>/dev/null
       - aws s3 cp deployment-package.zip s3://$SOURCE_BUCKET_NAME/$VERIFY_PARAMETER_NAME &>/dev/null
       - VERIFY_S3_VERSION=$(aws s3api get-object --bucket $SOURCE_BUCKET_NAME --key $VERIFY_PARAMETER_NAME getobjectoutfile | jq -r '.VersionId')
@@ -65,8 +65,8 @@ phases:
 # Signin
 #
       - mkdir $CODEBUILD_SRC_DIR/node_modules
-      - rsync -a $CODEBUILD_SRC_DIR/src/$SIGNIN_ROUTE/node_modules/ $CODEBUILD_SRC_DIR/node_modules
-      - rsync -a $CODEBUILD_SRC_DIR/src/utils/node_modules/ $CODEBUILD_SRC_DIR/node_modules
+      - rsync -a $CODEBUILD_SRC_DIR/src/$SIGNIN_ROUTE/node_modules/ $CODEBUILD_SRC_DIR/node_modules &>/dev/null
+      - rsync -a $CODEBUILD_SRC_DIR/src/utils/node_modules/ $CODEBUILD_SRC_DIR/node_modules &>/dev/null
       - zip -r9 deployment-package $CODEBUILD_SRC_DIR/src/$SIGNIN_ROUTE/index.js $CODEBUILD_SRC_DIR/node_modules $CODEBUILD_SRC_DIR/src/utils &>/dev/null
       - aws s3 cp deployment-package.zip s3://$SOURCE_BUCKET_NAME/$SIGNIN_PARAMETER_NAME &>/dev/null
       - SIGNIN_S3_VERSION=$(aws s3api get-object --bucket $SOURCE_BUCKET_NAME --key $SIGNIN_PARAMETER_NAME getobjectoutfile | jq -r '.VersionId')
@@ -75,8 +75,8 @@ phases:
 ## Signout
 ##
 #      - mkdir $CODEBUILD_SRC_DIR/node_modules
-#      - rsync -a $CODEBUILD_SRC_DIR/src/$SIGNOUT_ROUTE/node_modules/ $CODEBUILD_SRC_DIR/node_modules
-#      - rsync -a $CODEBUILD_SRC_DIR/src/utils/node_modules/ $CODEBUILD_SRC_DIR/node_modules
+#      - rsync -a $CODEBUILD_SRC_DIR/src/$SIGNOUT_ROUTE/node_modules/ $CODEBUILD_SRC_DIR/node_modules &>/dev/null
+#      - rsync -a $CODEBUILD_SRC_DIR/src/utils/node_modules/ $CODEBUILD_SRC_DIR/node_modules &>/dev/null
 #      - zip -r9 deployment-package $CODEBUILD_SRC_DIR/src/$SIGNOUT_ROUTE/index.js $CODEBUILD_SRC_DIR/node_modules $CODEBUILD_SRC_DIR/src/utils &>/dev/null
 #      - aws s3 cp deployment-package.zip s3://$SOURCE_BUCKET_NAME/$SIGNOUT_PARAMETER_NAME &>/dev/null
 #      - SIGNOUT_S3_VERSION=$(aws s3api get-object --bucket $SOURCE_BUCKET_NAME --key $SIGNOUT_PARAMETER_NAME getobjectoutfile | jq -r '.VersionId')
@@ -85,8 +85,8 @@ phases:
 ## Reset Password
 ##
 #      - mkdir $CODEBUILD_SRC_DIR/node_modules
-#      - rsync -a $CODEBUILD_SRC_DIR/src/$RESET_PASSWORD_ROUTE/node_modules/ $CODEBUILD_SRC_DIR/node_modules
-#      - rsync -a $CODEBUILD_SRC_DIR/src/utils/node_modules/ $CODEBUILD_SRC_DIR/node_modules
+#      - rsync -a $CODEBUILD_SRC_DIR/src/$RESET_PASSWORD_ROUTE/node_modules/ $CODEBUILD_SRC_DIR/node_modules &>/dev/null
+#      - rsync -a $CODEBUILD_SRC_DIR/src/utils/node_modules/ $CODEBUILD_SRC_DIR/node_modules &>/dev/null
 #      - zip -r9 deployment-package $CODEBUILD_SRC_DIR/src/$RESET_PASSWORD_ROUTE/index.js $CODEBUILD_SRC_DIR/node_modules $CODEBUILD_SRC_DIR/src/utils &>/dev/null
 #      - aws s3 cp deployment-package.zip s3://$SOURCE_BUCKET_NAME/$RESET_PASSWORD_PARAMETER_NAME &>/dev/null
 #      - RESET_PASSWORD_S3_VERSION=$(aws s3api get-object --bucket $SOURCE_BUCKET_NAME --key $RESET_PASSWORD_PARAMETER_NAME getobjectoutfile | jq -r '.VersionId')
