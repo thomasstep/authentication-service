@@ -1,4 +1,7 @@
 const {
+  DynamoDBClient,
+} = require('@aws-sdk/client-dynamodb');
+const {
   DEFAULT_DYNAMODB_REGION,
 } = require('../constants');
 

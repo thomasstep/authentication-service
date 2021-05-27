@@ -1,4 +1,7 @@
 const {
+  GetItemCommand,
+} = require('@aws-sdk/client-dynamodb');
+const {
   ACTIVE_USER_SORT_KEY,
 } = require('../constants');
 const { client } = require('./databaseSession');
@@ -20,4 +23,6 @@ async function getUser(email) {
   return getUserData;
 }
 
-module.exports = getUser;
+module.exports = {
+  getUser,
+};

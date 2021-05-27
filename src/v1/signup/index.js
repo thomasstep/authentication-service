@@ -1,9 +1,11 @@
-const {
-  DynamoDBClient,
-  GetItemCommand,
-  PutItemCommand,
-} = require('@aws-sdk/client-dynamodb');
 const sgMail = require('@sendgrid/mail');
+const {
+  createUser,
+  getUser,
+} = require('../../utils/database');
+const {
+  UNVERIFIED_USER_SORT_KEY,
+} = require('../../utils/constants');
 
 exports.handler = async function (event, context, callback) {
   try {
@@ -24,24 +26,7 @@ exports.handler = async function (event, context, callback) {
       }
     }
 
-    const client = new DynamoDBClient({
-      region: process.env.AWS_REGION || 'us-east-1',
-    });
-
-    // check that email doesn't already exist in user table
-    const checkUserQuery = {
-      TableName: process.env.USER_TABLE_NAME,
-      Key: {
-        email: {
-          S: email,
-        },
-        status: {
-          S: 'active',
-        },
-      },
-    };
-    const checkUserCommand = new GetItemCommand(checkUserQuery);
-    const checkUserData = await client.send(checkUserCommand);
+    const checkUserData = await getUser(email);
     console.log(checkUserData);
     if (checkUserData.Item) {
       throw new Error('User already exists');
@@ -50,27 +35,10 @@ exports.handler = async function (event, context, callback) {
     // create user in verification table
     // want a 6 digit verification token
     const verificationToken = Math.floor(Math.random() * 999999).toString();
-    const createUserQuery = {
-      TableName: process.env.USER_TABLE_NAME,
-      Item: {
-        email: {
-          S: email,
-        },
-        status: {
-          S: 'unverified', // TODO reference this from a const file
-        },
-        token: {
-          S: verificationToken,
-        },
-        password: {
-          S: password,
-        },
-        ttl: {
-          N: process.env.VERIFICATION_TTL || '60',
-        },
-      },
+    const additionalCreateUserColumns = {
+      verificationToken,
+      hashedPassword: password,
     };
-    const createUserCommand = new PutItemCommand(createUserQuery);
 
     // send verification email
     const redirectUrl = process.env.VERIFICATION_REDIRECT_URL
@@ -96,7 +64,7 @@ exports.handler = async function (event, context, callback) {
     sgMail.setApiKey(process.env.SENDGRID_API_KEY);
 
     await Promise.all([
-      client.send(createUserCommand),
+      createUser(UNVERIFIED_USER_SORT_KEY, email, additionalCreateUserColumns),
       sgMail.send(msg),
     ]);
     
