@@ -50,8 +50,6 @@ exports.handler = async function (event, context, callback) {
     }
 
 
-    // TODO take this out?
-    // const privateKey = getPrivateKey();
     const privateKeyPath = path.resolve(__dirname, PRIVATE_KEY_NAME);
     const privateKey = fs.readFileSync(privateKeyPath, 'utf8');
     const token = jwt.sign(
@@ -76,9 +74,10 @@ exports.handler = async function (event, context, callback) {
 
     const data = {
       statusCode: 200,
-      body: JSON.stringify({
-        cookie: jwtCookie,
-      }),
+      headers: {
+        'Set-Cookie': jwtCookie,
+      },
+      body: token,
     };
     callback(null, data);
     return;
