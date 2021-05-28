@@ -1,6 +1,7 @@
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const cookie = require('cookie');
+const fs = require('fs');
 
 const {
   getPrivateKey,
@@ -10,6 +11,7 @@ const {
 } = require('../../utils/database');
 const {
   ACTIVE_USER_SORT_KEY,
+  PRIVATE_KEY_NAME,
   UNVERIFIED_USER_SORT_KEY,
 } = require('../../utils/constants');
 
@@ -46,7 +48,9 @@ exports.handler = async function (event, context, callback) {
     }
 
 
-    const privateKey = getPrivateKey();
+    // TODO take this out?
+    // const privateKey = getPrivateKey();
+    const privateKey = fs.readFileSync(PRIVATE_KEY_NAME);
     const token = jwt.sign(
       {
         email,
