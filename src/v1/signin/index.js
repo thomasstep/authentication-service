@@ -3,6 +3,9 @@ const jwt = require('jsonwebtoken');
 const cookie = require('cookie');
 
 const {
+  getPrivateKey,
+} = require('../../utils');
+const {
   getUser,
 } = require('../../utils/database');
 const {
@@ -43,12 +46,13 @@ exports.handler = async function (event, context, callback) {
     }
 
 
+    const privateKey = getPrivateKey();
     const token = jwt.sign(
       {
         email,
         time: new Date(),
       },
-      process.env.JWT_PRIVATE_KEY,
+      privateKey,
       {
         algorithm: 'RS256',
         expiresIn: '6h',
