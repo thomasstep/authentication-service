@@ -77,7 +77,9 @@ exports.handler = async function (event, context, callback) {
       headers: {
         'Set-Cookie': jwtCookie,
       },
-      body: token,
+      body: JSON.stringify({
+        token,
+      }),
     };
     callback(null, data);
     return;
