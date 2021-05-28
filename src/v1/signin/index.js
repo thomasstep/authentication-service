@@ -76,7 +76,9 @@ exports.handler = async function (event, context, callback) {
 
     const data = {
       statusCode: 200,
-      cookie: jwtCookie,
+      body: JSON.stringify({
+        cookie: jwtCookie,
+      }),
     };
     callback(null, data);
     return;
