@@ -1,7 +1,9 @@
+const fs = require('fs');
+const path = require('path');
+
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const cookie = require('cookie');
-const fs = require('fs');
 
 const {
   getPrivateKey,
@@ -50,7 +52,8 @@ exports.handler = async function (event, context, callback) {
 
     // TODO take this out?
     // const privateKey = getPrivateKey();
-    const privateKey = fs.readFileSync(PRIVATE_KEY_NAME);
+    const privateKeyPath = path.resolve(__dirname, PRIVATE_KEY_NAME);
+    const privateKey = fs.readFileSync(privateKeyPath, 'utf8');
     const token = jwt.sign(
       {
         email,
