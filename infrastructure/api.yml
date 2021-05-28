@@ -65,14 +65,6 @@ Parameters:
     Type: AWS::SSM::Parameter::Value<String>
     Description: Sendgrid API Key Parameter name
     Default: sendgrid-api-key
-  JwtPrivateKey:
-    Type: AWS::SSM::Parameter::Value<String>
-    Description: JWT secret Parameter name used to sign the JWT
-    Default: authentication-service-private-key
-  JwtPublicKey:
-    Type: AWS::SSM::Parameter::Value<String>
-    Description: JWT RSA public key Parameter name used to verify the JWT
-    Default: authentication-service-public-key
 
 Resources:
   LambdaIamRole:
@@ -160,7 +152,6 @@ Resources:
           # AWS_REGION: !Ref AWS::Region !! This is available to all Lambdas by default
           USER_TABLE_NAME:
             Fn::ImportValue: !Sub "${DDBTablesStackName}-user-table-name"
-          JWT_PRIVATE_KEY: !Ref JwtPrivateKey
       Handler: src/v1/signin/index.handler
       MemorySize: 128
       Role: !GetAtt
