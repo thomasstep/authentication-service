@@ -55,7 +55,7 @@ phases:
       - aws s3 cp deployment-package.zip s3://$SOURCE_BUCKET_NAME/$SIGNUP_SOURCE_KEY > /dev/null
       - SIGNUP_S3_VERSION=$(aws s3api get-object --bucket $SOURCE_BUCKET_NAME --key $SIGNUP_SOURCE_KEY getobjectoutfile | jq -r '.VersionId')
       - rm -rf ./node_modules
-      - rm deployment-package
+      - rm deployment-package.zip
 #
 # Verify
 #
@@ -69,8 +69,7 @@ phases:
       - aws s3 cp deployment-package.zip s3://$SOURCE_BUCKET_NAME/$VERIFY_SOURCE_KEY > /dev/null
       - VERIFY_S3_VERSION=$(aws s3api get-object --bucket $SOURCE_BUCKET_NAME --key $VERIFY_SOURCE_KEY getobjectoutfile | jq -r '.VersionId')
       - rm -rf ./node_modules
-      - rm deployment-package
-      - rm 
+      - rm deployment-package.zip
 #
 # Signin
 #
@@ -81,7 +80,7 @@ phases:
       - aws s3 cp deployment-package.zip s3://$SOURCE_BUCKET_NAME/$SIGNIN_SOURCE_KEY > /dev/null
       - SIGNIN_S3_VERSION=$(aws s3api get-object --bucket $SOURCE_BUCKET_NAME --key $SIGNIN_SOURCE_KEY getobjectoutfile | jq -r '.VersionId')
       - rm -rf ./node_modules
-      - rm deployment-package
+      - rm deployment-package.zip
 ##
 ## Signout
 ##
@@ -92,7 +91,7 @@ phases:
 #      - aws s3 cp deployment-package.zip s3://$SOURCE_BUCKET_NAME/$SIGNOUT_SOURCE_KEY > /dev/null
 #      - SIGNOUT_S3_VERSION=$(aws s3api get-object --bucket $SOURCE_BUCKET_NAME --key $SIGNOUT_SOURCE_KEY getobjectoutfile | jq -r '.VersionId')
 #      - rm -rf ./node_modules
-#      - rm deployment-package
+#      - rm deployment-package.zip
 ##
 ## Reset Password
 ##
@@ -103,7 +102,7 @@ phases:
 #      - aws s3 cp deployment-package.zip s3://$SOURCE_BUCKET_NAME/$RESET_PASSWORD_SOURCE_KEY > /dev/null
 #      - RESET_PASSWORD_S3_VERSION=$(aws s3api get-object --bucket $SOURCE_BUCKET_NAME --key $RESET_PASSWORD_SOURCE_KEY getobjectoutfile | jq -r '.VersionId')
 #      - rm -rf ./node_modules
-#      - rm deployment-package
+#      - rm deployment-package.zip
   post_build:
     commands:
       - echo $SIGNUP_S3_VERSION
