@@ -66,7 +66,7 @@ exports.handler = async function (event, context, callback) {
       },
     );
 
-    const cookie = cookie.serialize('token', token, {
+    const jwtCookie = cookie.serialize('token', token, {
       httpOnly: true,
       maxAge: 6 * 60 * 60,
       path: '/',
@@ -75,8 +75,8 @@ exports.handler = async function (event, context, callback) {
     });
 
     const data = {
-      statusCode: 201,
-      cookie,
+      statusCode: 200,
+      cookie: jwtCookie,
     };
     callback(null, data);
     return;
