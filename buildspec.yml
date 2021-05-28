@@ -63,9 +63,7 @@ phases:
       # TODO uncomment following line if/when verify route has node_modules
       #- rsync -a ./src/$VERIFY_ROUTE/node_modules/ ./node_modules > /dev/null
       - rsync -a ./src/utils/node_modules/ ./node_modules > /dev/null
-      # NOTE this is an important step for adding keys to the API routes that require them as a file
-      - aws s3 cp s3://$SOURCE_BUCKET_NAME/$PRIVATE_KEY_S3_PATH ./src/$VERIFY_ROUTE/$PRIVATE_KEY_NAME
-      - zip -r9 deployment-package ./src/$VERIFY_ROUTE/index.js ./src/$VERIFY_ROUTE/$PRIVATE_KEY_NAME ./node_modules ./src/utils > /dev/null
+      - zip -r9 deployment-package ./src/$VERIFY_ROUTE/index.js ./node_modules ./src/utils > /dev/null
       - aws s3 cp deployment-package.zip s3://$SOURCE_BUCKET_NAME/$VERIFY_SOURCE_KEY > /dev/null
       - VERIFY_S3_VERSION=$(aws s3api get-object --bucket $SOURCE_BUCKET_NAME --key $VERIFY_SOURCE_KEY getobjectoutfile | jq -r '.VersionId')
       - rm -rf ./node_modules
@@ -76,7 +74,9 @@ phases:
       - mkdir ./node_modules
       - rsync -a ./src/$SIGNIN_ROUTE/node_modules/ ./node_modules > /dev/null
       - rsync -a ./src/utils/node_modules/ ./node_modules > /dev/null
-      - zip -r9 deployment-package ./src/$SIGNIN_ROUTE/index.js ./node_modules ./src/utils > /dev/null
+      # NOTE this is an important step for adding keys to the API routes that require them as a file
+      - aws s3 cp s3://$SOURCE_BUCKET_NAME/$PRIVATE_KEY_S3_PATH ./src/$SIGNIN_ROUTE/$PRIVATE_KEY_NAME
+      - zip -r9 deployment-package ./src/$SIGNIN_ROUTE/index.js ./src/$SIGNIN_ROUTE/$PRIVATE_KEY_NAME ./node_modules ./src/utils > /dev/null
       - aws s3 cp deployment-package.zip s3://$SOURCE_BUCKET_NAME/$SIGNIN_SOURCE_KEY > /dev/null
       - SIGNIN_S3_VERSION=$(aws s3api get-object --bucket $SOURCE_BUCKET_NAME --key $SIGNIN_SOURCE_KEY getobjectoutfile | jq -r '.VersionId')
       - rm -rf ./node_modules
