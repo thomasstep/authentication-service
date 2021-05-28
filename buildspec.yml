@@ -21,7 +21,9 @@ env:
     SIGNOUT_PARAMETER_NAME: "V1SignoutSourceVersion"
     RESET_PASSWORD_PARAMETER_NAME: "V1ResetPasswordSourceVersion"
     # NOTE if you change the key names, they also need to be changed in constants.js
+    PRIVATE_KEY_S3_PATH: "green-things-auth/authentication-service.key"
     PRIVATE_KEY_NAME: "authentication-service.key"
+    PUBLIC_KEY_S3_PATH: "green-things-auth/authentication-service.key.pub"
     PUBLIC_KEY_NAME: "authentication-service.key.pub"
 
 phases:
@@ -61,7 +63,7 @@ phases:
       #- rsync -a ./src/$VERIFY_ROUTE/node_modules/ ./node_modules > /dev/null
       - rsync -a ./src/utils/node_modules/ ./node_modules > /dev/null
       # NOTE this is an important step for adding keys to the API routes that require them as a file
-      - aws s3 cp s3://$SOURCE_BUCKET_NAME/$PRIVATE_KEY_NAME ./src/$VERIFY_ROUTE/$PRIVATE_KEY_NAME
+      - aws s3 cp s3://$SOURCE_BUCKET_NAME/$PRIVATE_KEY_S3_PATH ./src/$VERIFY_ROUTE/$PRIVATE_KEY_NAME
       - zip -r9 deployment-package ./src/$VERIFY_ROUTE/index.js ./src/$VERIFY_ROUTE/$PRIVATE_KEY_NAME ./node_modules ./src/utils > /dev/null
       - aws s3 cp deployment-package.zip s3://$SOURCE_BUCKET_NAME/$VERIFY_SOURCE_KEY > /dev/null
       - VERIFY_S3_VERSION=$(aws s3api get-object --bucket $SOURCE_BUCKET_NAME --key $VERIFY_SOURCE_KEY getobjectoutfile | jq -r '.VersionId')
