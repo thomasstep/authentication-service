@@ -15,7 +15,7 @@ exports.handler = async function (event, context, callback) {
     let redirectUrl = null;
 
     console.log(JSON.stringify(event));
-    
+
     if (event && event.queryStringParameters) {
       email = event.queryStringParameters.email;
       verificationToken = event.queryStringParameters.verificationToken;
@@ -57,7 +57,7 @@ exports.handler = async function (event, context, callback) {
 
     await Promise.all([
       createUser(email, ACTIVE_USER_SORT_KEY, additionalCreateUserColumns),
-      deleteUser(email, UNVERIFIED_USER_SORT_KEY);
+      deleteUser(email, UNVERIFIED_USER_SORT_KEY),
     ]);
 
     const data = {

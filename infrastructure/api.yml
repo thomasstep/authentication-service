@@ -160,7 +160,7 @@ Resources:
           # AWS_REGION: !Ref AWS::Region !! This is available to all Lambdas by default
           USER_TABLE_NAME:
             Fn::ImportValue: !Sub "${DDBTablesStackName}-user-table-name"
-          JWT_SECRET: !Ref JwtPrivateKey
+          JWT_PRIVATE_KEY: !Ref JwtPrivateKey
       Handler: src/v1/signin/index.handler
       MemorySize: 128
       Role: !GetAtt
