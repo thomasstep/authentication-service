@@ -109,3 +109,4 @@ dist
 export-env-vars.sh
 .DS_Store
 getobjectoutfile
+*.key

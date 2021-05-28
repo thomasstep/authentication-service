@@ -12,10 +12,16 @@ const {
 
 exports.handler = async function (event, context, callback) {
   try {
+    let email = '';
     let password = '';
 
     if (event.body) {
       const body = JSON.parse(event.body)
+      if (body.email) {
+        email = body.email;
+      } else {
+        throw new Error('No email in body');
+      }
       if (body.password) {
         password = body.password;
       } else {
@@ -38,9 +44,13 @@ exports.handler = async function (event, context, callback) {
 
 
     const token = jwt.sign(
-      { uuid: user.uuid, time: new Date() },
-      JWT_SECRET,
       {
+        email,
+        time: new Date(),
+      },
+      process.env.JWT_PRIVATE_KEY,
+      {
+        algorithm: 'RS256',
         expiresIn: '6h',
       },
     );
