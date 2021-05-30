@@ -81,17 +81,18 @@ phases:
       - SIGNIN_S3_VERSION=$(aws s3api get-object --bucket $SOURCE_BUCKET_NAME --key $SIGNIN_SOURCE_KEY getobjectoutfile | jq -r '.VersionId')
       - rm -rf ./node_modules
       - rm deployment-package.zip
-##
-## Signout
-##
-#      - mkdir ./node_modules
-#      - rsync -a ./src/$SIGNOUT_ROUTE/node_modules/ ./node_modules > /dev/null
-#      - rsync -a ./src/utils/node_modules/ ./node_modules > /dev/null
-#      - zip -r9 deployment-package ./src/$SIGNOUT_ROUTE/index.js ./node_modules ./src/utils > /dev/null
-#      - aws s3 cp deployment-package.zip s3://$SOURCE_BUCKET_NAME/$SIGNOUT_SOURCE_KEY > /dev/null
-#      - SIGNOUT_S3_VERSION=$(aws s3api get-object --bucket $SOURCE_BUCKET_NAME --key $SIGNOUT_SOURCE_KEY getobjectoutfile | jq -r '.VersionId')
-#      - rm -rf ./node_modules
-#      - rm deployment-package.zip
+#
+# Signout
+#
+      - mkdir ./node_modules
+      # TODO uncomment following line if/when verify route has node_modules
+      #- rsync -a ./src/$SIGNOUT_ROUTE/node_modules/ ./node_modules > /dev/null
+      - rsync -a ./src/utils/node_modules/ ./node_modules > /dev/null
+      - zip -r9 deployment-package ./src/$SIGNOUT_ROUTE/index.js ./node_modules ./src/utils > /dev/null
+      - aws s3 cp deployment-package.zip s3://$SOURCE_BUCKET_NAME/$SIGNOUT_SOURCE_KEY > /dev/null
+      - SIGNOUT_S3_VERSION=$(aws s3api get-object --bucket $SOURCE_BUCKET_NAME --key $SIGNOUT_SOURCE_KEY getobjectoutfile | jq -r '.VersionId')
+      - rm -rf ./node_modules
+      - rm deployment-package.zip
 ##
 ## Reset Password
 ##

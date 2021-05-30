@@ -436,7 +436,7 @@ Resources:
               - Arn
             - /invocations
       MethodResponses:
-        - StatusCode: "200"
+        - StatusCode: "201"
       ResourceId: !Ref V1SignupResource
       RestApiId: !Ref AuthenticationServiceApi
 
@@ -461,7 +461,7 @@ Resources:
               - Arn
             - /invocations
       MethodResponses:
-        - StatusCode: "200"
+        - StatusCode: "204"
       ResourceId: !Ref V1VerifyResource
       RestApiId: !Ref AuthenticationServiceApi
 
@@ -511,7 +511,7 @@ Resources:
               - Arn
             - /invocations
       MethodResponses:
-        - StatusCode: "200"
+        - StatusCode: "201"
       ResourceId: !Ref V1SignoutResource
       RestApiId: !Ref AuthenticationServiceApi
 
@@ -536,7 +536,7 @@ Resources:
               - Arn
             - /invocations
       MethodResponses:
-        - StatusCode: "200"
+        - StatusCode: "201"
       ResourceId: !Ref V1ResetPasswordResource
       RestApiId: !Ref AuthenticationServiceApi
 
