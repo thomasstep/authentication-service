@@ -18,7 +18,9 @@ async function updatePassword(email, hashedPassword) {
 
   const updateExpression = 'SET hashedPassword = :newPass';
   const expressionAttributes = {
-    ':newPass': hashedPassword,
+    ':newPass': {
+      S: hashedPassword,
+    },
   };
 
   const updatePasswordQuery = {
