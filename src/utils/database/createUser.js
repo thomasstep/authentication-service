@@ -4,6 +4,7 @@ const {
 const {
   ACTIVE_USER_SORT_KEY,
   DEFAULT_VERIFICATION_TTL,
+  RESET_USER_SORT_KEY,
   UNVERIFIED_USER_SORT_KEY,
 } = require('../constants');
 const { client } = require('./databaseSession');
@@ -25,11 +26,11 @@ async function createUser(email, status, additionalColumns) {
     const hashedPassword = additionalColumns.hashedPassword;
 
     if (!verificationToken) {
-      throw new Error('[utils/database/createUser] Missing verification token');
+      throw new Error('Missing verification token');
     }
 
     if (!hashedPassword) {
-      throw new Error('[utils/database/createUser] Missing hashed password');
+      throw new Error('Missing hashed password');
     }
 
     item.token = {
@@ -47,11 +48,23 @@ async function createUser(email, status, additionalColumns) {
     const hashedPassword = additionalColumns.hashedPassword;
 
     if (!hashedPassword) {
-      throw new Error('[utils/database/createUser] Missing hashed password');
+      throw new Error('Missing hashed password');
     }
 
     item.hashedPassword = {
       S: hashedPassword,
+    };
+  }
+  // RESET
+  if (status === RESET_USER_SORT_KEY) {
+    const resetToken = additionalColumns.resetToken;
+
+    if (!resetToken) {
+      throw new Error('Missing reset token');
+    }
+
+    item.resetToken = {
+      S: resetToken,
     };
   }
 

@@ -47,6 +47,14 @@ Parameters:
     Type: String
     Description: S3 version for /v1/reset-password source
 
+  V1ResetPasswordEmailKey:
+    Type: String
+    Description: S3 key with /v1/reset-password/send-email source
+    Default: authentication-service-api/v1/reset-password-send-email # NOTE this does not follow API path
+  V1ResetPasswordEmailSourceVersion:
+    Type: String
+    Description: S3 version for /v1/reset-password/send-email source
+
   DDBTablesStackName:
     Type: String
     Description: Name of stack that exports DDB table names
@@ -65,6 +73,17 @@ Parameters:
     Type: AWS::SSM::Parameter::Value<String>
     Description: Sendgrid API Key Parameter name
     Default: sendgrid-api-key
+
+  # signin lambda env vars
+  JwtCookieMaxAge:
+    Type: String
+    Description: Max age in seconds for the JWT cookie
+
+  # reset password env vars
+  # also uses EmailFromAddress, SendgridApiKey
+  ResetPasswordUrl:
+    Type: String
+    Description: URL for resetting password
 
 Resources:
   LambdaIamRole:
@@ -152,6 +171,7 @@ Resources:
           # AWS_REGION: !Ref AWS::Region !! This is available to all Lambdas by default
           USER_TABLE_NAME:
             Fn::ImportValue: !Sub "${DDBTablesStackName}-user-table-name"
+          JWT_COOKIE_MAX_AGE: !Ref JwtCookieMaxAge
       Handler: src/v1/signin/index.handler
       MemorySize: 128
       Role: !GetAtt
@@ -195,6 +215,30 @@ Resources:
           USER_TABLE_NAME:
             Fn::ImportValue: !Sub "${DDBTablesStackName}-user-table-name"
       Handler: src/v1/reset-password/index.handler
+      MemorySize: 128
+      Role: !GetAtt
+        - LambdaIamRole
+        - Arn
+      Runtime: nodejs14.x
+      Timeout: 10
+
+  ResetPasswordEmailLambdaFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      Code:
+        S3Bucket: !Ref SourceBucket
+        S3Key: !Ref V1ResetPasswordEmailKey
+        S3ObjectVersion: !Ref V1ResetPasswordEmailSourceVersion
+      Description: /v1/reset-password/send-email
+      Environment:
+        Variables:
+          # AWS_REGION: !Ref AWS::Region !! This is available to all Lambdas by default
+          USER_TABLE_NAME:
+            Fn::ImportValue: !Sub "${DDBTablesStackName}-user-table-name"
+          RESET_PASSWORD_URL: !Ref ResetPasswordUrl # NOTE need a webpage to help handle this
+          EMAIL_FROM_ADDRESS: !Ref EmailFromAddress
+          SENDGRID_API_KEY: !Ref SendgridApiKey
+      Handler: src/v1/reset-password/send-email/index.handler
       MemorySize: 128
       Role: !GetAtt
         - LambdaIamRole
@@ -303,6 +347,26 @@ Resources:
           - !Ref ApiGatewayStage
           - /POST/v1/reset-password
 
+  ResetPasswordEmailLambdaFunctionPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName: !GetAtt
+        - ResetPasswordEmailLambdaFunction
+        - Arn
+      Principal: apigateway.amazonaws.com
+      SourceArn: !Join
+        - ""
+        - - "arn:aws:execute-api:"
+          - !Ref AWS::Region
+          - ":"
+          - !Ref AWS::AccountId
+          - ":"
+          - !Ref AuthenticationServiceApi
+          - /
+          - !Ref ApiGatewayStage
+          - /POST/v1/reset-password/send-email
+
   SignupLogGroup:
     Type: AWS::Logs::LogGroup
     Properties:
@@ -346,6 +410,15 @@ Resources:
         - ""
         - - "/aws/lambda/"
           - !Ref ResetPasswordLambdaFunction
+      RetentionInDays: 7
+
+  ResetPasswordEmailLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Join
+        - ""
+        - - "/aws/lambda/"
+          - !Ref ResetPasswordEmailLambdaFunction
       RetentionInDays: 7
 
 #-------------------------------------------------------------------------------
@@ -415,6 +488,13 @@ Resources:
       PathPart: reset-password
       RestApiId: !Ref AuthenticationServiceApi
 
+  V1ResetPasswordEmailResource:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      ParentId: !Ref V1ResetPasswordResource
+      PathPart: send-email
+      RestApiId: !Ref AuthenticationServiceApi
+
   V1SignupMethod:
     Type: AWS::ApiGateway::Method
     Properties:
@@ -475,6 +555,9 @@ Resources:
         IntegrationHttpMethod: POST # NOTE: this has to be POST for Lambda integration
         IntegrationResponses:
           - StatusCode: "200"
+          - StatusCode: "400"
+          - StatusCode: "401"
+          - StatusCode: "404"
         Type: AWS_PROXY
         Uri: !Join
           - ""
@@ -540,6 +623,31 @@ Resources:
       ResourceId: !Ref V1ResetPasswordResource
       RestApiId: !Ref AuthenticationServiceApi
 
+  V1ResetPasswordEmailMethod:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      ApiKeyRequired: true
+      AuthorizationType: NONE
+      HttpMethod: POST
+      Integration:
+        IntegrationHttpMethod: POST # NOTE: this has to be POST for Lambda integration
+        IntegrationResponses:
+          - StatusCode: "200"
+        Type: AWS_PROXY
+        Uri: !Join
+          - ""
+          - - "arn:aws:apigateway:"
+            - !Ref AWS::Region
+            - :lambda:path/2015-03-31/functions/
+            - !GetAtt
+              - ResetPasswordEmailLambdaFunction
+              - Arn
+            - /invocations
+      MethodResponses:
+        - StatusCode: "201"
+      ResourceId: !Ref V1ResetPasswordEmailResource
+      RestApiId: !Ref AuthenticationServiceApi
+
   CloudWatchLoggingRole:
     Type: AWS::IAM::Role
     Properties:
@@ -576,6 +684,7 @@ Resources:
       - V1SigninMethod
       - V1SignoutMethod
       - V1ResetPasswordMethod
+      - V1ResetPasswordEmailMethod
 
   ApiGatewayStage:
     Type: AWS::ApiGateway::Stage
@@ -603,6 +712,10 @@ Resources:
           LoggingLevel: INFO
           MetricsEnabled: true
           ResourcePath: /~1v1~1reset-password
+        - HttpMethod: POST
+          LoggingLevel: INFO
+          MetricsEnabled: true
+          ResourcePath: /~1v1~1reset-password~1send-email
       RestApiId: !Ref AuthenticationServiceApi
       StageName: prod # IMPORTANT: don't change this w/o also changing log group
     DependsOn: ApiGatewayLogGroup

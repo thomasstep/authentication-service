@@ -30,7 +30,6 @@ exports.handler = async function (event, context, callback) {
 
     const salt = bcrypt.genSaltSync();
     const hashedPassword = bcrypt.hashSync(password, salt);
-    console.log(`HASHPASS: ${hashedPassword}`);
 
     const checkUserData = await getUser(email, ACTIVE_USER_SORT_KEY);
     console.log(checkUserData);

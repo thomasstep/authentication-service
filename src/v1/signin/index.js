@@ -13,6 +13,7 @@ const {
 } = require('../../utils/database');
 const {
   ACTIVE_USER_SORT_KEY,
+  JWT_COOKIE_MAX_AGE,
   PRIVATE_KEY_NAME,
   UNVERIFIED_USER_SORT_KEY,
 } = require('../../utils/constants');
@@ -27,26 +28,41 @@ exports.handler = async function (event, context, callback) {
       if (body.email) {
         email = body.email;
       } else {
-        throw new Error('No email in body');
+        const errorPayload = {
+          statusCode: 400,
+          body: 'No email in body',
+        };
+        return errorPayload;
       }
       if (body.password) {
         password = body.password;
       } else {
-        throw new Error('No password in body');
+        const errorPayload = {
+          statusCode: 400,
+          body: 'No password in body',
+        };
+        return errorPayload;
       }
     }
 
     const getUserData = await getUser(email, ACTIVE_USER_SORT_KEY);
-    console.log(getUserData);
     if (!getUserData.Item) {
-      throw new Error('User does not exist');
+      const errorPayload = {
+        statusCode: 404,
+        body: 'User does not exist',
+      };
+      return errorPayload;
     }
 
     const hashedPassword = getUserData.Item?.hashedPassword?.S;
     const validPassword = bcrypt.compareSync(password, hashedPassword);
 
     if (!validPassword) {
-      throw new Error('Invalid password');
+      const errorPayload = {
+        statusCode: 401,
+        body: 'Invalid password',
+      };
+      return errorPayload;
     }
 
 
@@ -66,7 +82,7 @@ exports.handler = async function (event, context, callback) {
 
     const jwtCookie = cookie.serialize('token', token, {
       httpOnly: true,
-      maxAge: 6 * 60 * 60,
+      maxAge: JWT_COOKIE_MAX_AGE,
       path: '/',
       sameSite: 'lax',
       secure: true,
@@ -81,10 +97,9 @@ exports.handler = async function (event, context, callback) {
         token,
       }),
     };
-    callback(null, data);
-    return;
+    return data;
   } catch (uncaughtError) {
     console.error(uncaughtError);
-    callback(uncaughtError, null);
+    throw uncaughtError;
   }
 }

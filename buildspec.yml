@@ -7,12 +7,14 @@ env:
     SIGNIN_ROUTE: "v1/signin"
     SIGNOUT_ROUTE: "v1/signout"
     RESET_PASSWORD_ROUTE: "v1/reset-password"
+    RESET_PASSWORD_SEND_EMAIL_ROUTE: "v1/reset-password/send-email"
     SOURCE_BUCKET_NAME: "source-bucket-s3bucket-1e6txaiywjvno"
     SIGNUP_SOURCE_KEY: "green-things-auth/v1/signup"
     VERIFY_SOURCE_KEY: "green-things-auth/v1/verify"
     SIGNIN_SOURCE_KEY: "green-things-auth/v1/signin"
     SIGNOUT_SOURCE_KEY: "green-things-auth/v1/signout"
     RESET_PASSWORD_SOURCE_KEY: "green-things-auth/v1/reset-password"
+    RESET_PASSWORD_SEND_EMAIL_SOURCE_KEY: "green-things-auth/v1/reset-password-send-email"
     TEMPLATE_PATH: "infrastructure/api.yml"
     STACK_NAME: "green-things-auth"
     SIGNUP_PARAMETER_NAME: "V1SignupSourceVersion"
@@ -20,6 +22,7 @@ env:
     SIGNIN_PARAMETER_NAME: "V1SigninSourceVersion"
     SIGNOUT_PARAMETER_NAME: "V1SignoutSourceVersion"
     RESET_PASSWORD_PARAMETER_NAME: "V1ResetPasswordSourceVersion"
+    RESET_PASSWORD_SEND_EMAIL_PARAMETER_NAME: "V1ResetPasswordEmailSourceVersion"
     # NOTE if you change the key names, they also need to be changed in constants.js
     PRIVATE_KEY_S3_PATH: "green-things-auth/authentication-service.key"
     PRIVATE_KEY_NAME: "authentication-service.key"
@@ -38,10 +41,12 @@ phases:
       - npm install > /dev/null
       - cd $CODEBUILD_SRC_DIR/src/$SIGNIN_ROUTE
       - npm install > /dev/null
-      #- cd $CODEBUILD_SRC_DIR/src/v1/signout
-      #- npm install > /dev/null
-      #- cd $CODEBUILD_SRC_DIR/src/v1/reset-password
-      #- npm install > /dev/null
+      - cd $CODEBUILD_SRC_DIR/src/v1/signout
+      - npm install > /dev/null
+      - cd $CODEBUILD_SRC_DIR/src/v1/reset-password
+      - npm install > /dev/null
+      - cd $CODEBUILD_SRC_DIR/src/v1/reset-password/send-email
+      - npm install > /dev/null
   build:
     commands:
       - cd $CODEBUILD_SRC_DIR
@@ -93,17 +98,30 @@ phases:
       - SIGNOUT_S3_VERSION=$(aws s3api get-object --bucket $SOURCE_BUCKET_NAME --key $SIGNOUT_SOURCE_KEY getobjectoutfile | jq -r '.VersionId')
       - rm -rf ./node_modules
       - rm deployment-package.zip
-##
-## Reset Password
-##
-#      - mkdir ./node_modules
-#      - rsync -a ./src/$RESET_PASSWORD_ROUTE/node_modules/ ./node_modules > /dev/null
-#      - rsync -a ./src/utils/node_modules/ ./node_modules > /dev/null
-#      - zip -r9 deployment-package ./src/$RESET_PASSWORD_ROUTE/index.js ./node_modules ./src/utils > /dev/null
-#      - aws s3 cp deployment-package.zip s3://$SOURCE_BUCKET_NAME/$RESET_PASSWORD_SOURCE_KEY > /dev/null
-#      - RESET_PASSWORD_S3_VERSION=$(aws s3api get-object --bucket $SOURCE_BUCKET_NAME --key $RESET_PASSWORD_SOURCE_KEY getobjectoutfile | jq -r '.VersionId')
-#      - rm -rf ./node_modules
-#      - rm deployment-package.zip
+#
+# Reset Password
+#
+      - mkdir ./node_modules
+      # TODO uncomment following line if/when verify route has node_modules
+      #- rsync -a ./src/$RESET_PASSWORD_ROUTE/node_modules/ ./node_modules > /dev/null
+      - rsync -a ./src/utils/node_modules/ ./node_modules > /dev/null
+      - zip -r9 deployment-package ./src/$RESET_PASSWORD_ROUTE/index.js ./node_modules ./src/utils > /dev/null
+      - aws s3 cp deployment-package.zip s3://$SOURCE_BUCKET_NAME/$RESET_PASSWORD_SOURCE_KEY > /dev/null
+      - RESET_PASSWORD_S3_VERSION=$(aws s3api get-object --bucket $SOURCE_BUCKET_NAME --key $RESET_PASSWORD_SOURCE_KEY getobjectoutfile | jq -r '.VersionId')
+      - rm -rf ./node_modules
+      - rm deployment-package.zip
+#
+# Reset Password Send Email
+#
+      - mkdir ./node_modules
+      # TODO uncomment following line if/when verify route has node_modules
+      #- rsync -a ./src/$RESET_PASSWORD_SEND_EMAIL_ROUTE/node_modules/ ./node_modules > /dev/null
+      - rsync -a ./src/utils/node_modules/ ./node_modules > /dev/null
+      - zip -r9 deployment-package ./src/$RESET_PASSWORD_SEND_EMAIL_ROUTE/index.js ./node_modules ./src/utils > /dev/null
+      - aws s3 cp deployment-package.zip s3://$SOURCE_BUCKET_NAME/$RESET_PASSWORD_SEND_EMAIL_SOURCE_KEY > /dev/null
+      - RESET_PASSWORD_SEND_EMAIL_S3_VERSION=$(aws s3api get-object --bucket $SOURCE_BUCKET_NAME --key $RESET_PASSWORD_SEND_EMAIL_SOURCE_KEY getobjectoutfile | jq -r '.VersionId')
+      - rm -rf ./node_modules
+      - rm deployment-package.zip
   post_build:
     commands:
       - echo $SIGNUP_S3_VERSION
@@ -111,5 +129,5 @@ phases:
       - echo $SIGNIN_S3_VERSION
       - echo $SIGNOUT_S3_VERSION
       - echo $RESET_PASSWORD_S3_VERSION
-      - aws cloudformation deploy --template-file $CODEBUILD_SRC_DIR/$TEMPLATE_PATH --stack-name $STACK_NAME --capabilities CAPABILITY_NAMED_IAM --parameter-overrides $SIGNUP_PARAMETER_NAME=$SIGNUP_S3_VERSION $VERIFY_PARAMETER_NAME=$VERIFY_S3_VERSION $SIGNIN_PARAMETER_NAME=$SIGNIN_S3_VERSION
-      # $SIGNOUT_PARAMETER_NAME=$SIGNOUT_S3_VERSION $RESET_PASSWORD_PARAMETER_NAME=$RESET_PASSWORD_S3_VERSION
+      - echo $RESET_PASSWORD_SEND_EMAIL_S3_VERSION
+      - aws cloudformation deploy --template-file $CODEBUILD_SRC_DIR/$TEMPLATE_PATH --stack-name $STACK_NAME --capabilities CAPABILITY_NAMED_IAM --parameter-overrides $SIGNUP_PARAMETER_NAME=$SIGNUP_S3_VERSION $VERIFY_PARAMETER_NAME=$VERIFY_S3_VERSION $SIGNIN_PARAMETER_NAME=$SIGNIN_S3_VERSION $SIGNOUT_PARAMETER_NAME=$SIGNOUT_S3_VERSION $RESET_PASSWORD_PARAMETER_NAME=$RESET_PASSWORD_S3_VERSION $RESET_PASSWORD_SEND_EMAIL_PARAMETER_NAME=$RESET_PASSWORD_SEND_EMAIL_S3_VERSION

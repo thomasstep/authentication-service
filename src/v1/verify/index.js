@@ -63,10 +63,9 @@ exports.handler = async function (event, context, callback) {
     const data = {
       statusCode: 204,
     };
-    callback(null, data);
-    return;
+    return data;
   } catch (uncaughtError) {
     console.error(uncaughtError);
-    callback(uncaughtError, null);
+    throw uncaughtError;
   }
 }
