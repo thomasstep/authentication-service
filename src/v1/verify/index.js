@@ -29,13 +29,12 @@ exports.handler = async function (event, context, callback) {
     ) {
       console.error(`Missing input email: ${email} token: ${verificationToken} redirect: ${redirectUrl}`);
       const errorPayload = {
-        errorType: 'BadRequest',
-        httpStatus: 400,
-        requestId: context.awsRequestId,
-        message: 'Missing input',
+        statusCode: 400,
+        body: JSON.stringify({
+          message: 'Missing input',
+        }),
       };
-      callback(JSON.stringify(errorPayload), null);
-      return;
+      return errorPayload;
     }
 
     const getUnverifiedData = await getUser(email, UNVERIFIED_USER_SORT_KEY);

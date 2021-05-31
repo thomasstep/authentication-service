@@ -78,12 +78,14 @@ Parameters:
   JwtCookieMaxAge:
     Type: String
     Description: Max age in seconds for the JWT cookie
+    Default: '21600'
 
   # reset password env vars
   # also uses EmailFromAddress, SendgridApiKey
   ResetPasswordUrl:
     Type: String
     Description: URL for resetting password
+    Default: 'https://thomasstep.com'
 
 Resources:
   LambdaIamRole:
@@ -324,7 +326,7 @@ Resources:
           - !Ref AuthenticationServiceApi
           - /
           - !Ref ApiGatewayStage
-          - /POST/v1/signout
+          - /GET/v1/signout
 
 
   ResetPasswordLambdaFunctionPermission:
@@ -365,7 +367,7 @@ Resources:
           - !Ref AuthenticationServiceApi
           - /
           - !Ref ApiGatewayStage
-          - /POST/v1/reset-password/send-email
+          - /GET/v1/reset-password/send-email
 
   SignupLogGroup:
     Type: AWS::Logs::LogGroup
@@ -517,6 +519,8 @@ Resources:
             - /invocations
       MethodResponses:
         - StatusCode: "201"
+        - StatusCode: "400"
+        - StatusCode: "403"
       ResourceId: !Ref V1SignupResource
       RestApiId: !Ref AuthenticationServiceApi
 
@@ -542,6 +546,7 @@ Resources:
             - /invocations
       MethodResponses:
         - StatusCode: "204"
+        - StatusCode: "400"
       ResourceId: !Ref V1VerifyResource
       RestApiId: !Ref AuthenticationServiceApi
 
@@ -555,9 +560,6 @@ Resources:
         IntegrationHttpMethod: POST # NOTE: this has to be POST for Lambda integration
         IntegrationResponses:
           - StatusCode: "200"
-          - StatusCode: "400"
-          - StatusCode: "401"
-          - StatusCode: "404"
         Type: AWS_PROXY
         Uri: !Join
           - ""
@@ -570,6 +572,9 @@ Resources:
             - /invocations
       MethodResponses:
         - StatusCode: "200"
+        - StatusCode: "400"
+        - StatusCode: "401"
+        - StatusCode: "404"
       ResourceId: !Ref V1SigninResource
       RestApiId: !Ref AuthenticationServiceApi
 
@@ -578,7 +583,7 @@ Resources:
     Properties:
       ApiKeyRequired: true
       AuthorizationType: NONE
-      HttpMethod: POST
+      HttpMethod: GET
       Integration:
         IntegrationHttpMethod: POST # NOTE: this has to be POST for Lambda integration
         IntegrationResponses:
@@ -620,6 +625,8 @@ Resources:
             - /invocations
       MethodResponses:
         - StatusCode: "201"
+        - StatusCode: "400"
+        - StatusCode: "403"
       ResourceId: !Ref V1ResetPasswordResource
       RestApiId: !Ref AuthenticationServiceApi
 
@@ -628,7 +635,7 @@ Resources:
     Properties:
       ApiKeyRequired: true
       AuthorizationType: NONE
-      HttpMethod: POST
+      HttpMethod: GET
       Integration:
         IntegrationHttpMethod: POST # NOTE: this has to be POST for Lambda integration
         IntegrationResponses:
@@ -645,6 +652,8 @@ Resources:
             - /invocations
       MethodResponses:
         - StatusCode: "201"
+        - StatusCode: "400"
+        - StatusCode: "404"
       ResourceId: !Ref V1ResetPasswordEmailResource
       RestApiId: !Ref AuthenticationServiceApi
 
@@ -704,7 +713,7 @@ Resources:
           LoggingLevel: INFO
           MetricsEnabled: true
           ResourcePath: /~1v1~1signin
-        - HttpMethod: POST
+        - HttpMethod: GET
           LoggingLevel: INFO
           MetricsEnabled: true
           ResourcePath: /~1v1~1signout
@@ -712,7 +721,7 @@ Resources:
           LoggingLevel: INFO
           MetricsEnabled: true
           ResourcePath: /~1v1~1reset-password
-        - HttpMethod: POST
+        - HttpMethod: GET
           LoggingLevel: INFO
           MetricsEnabled: true
           ResourcePath: /~1v1~1reset-password~1send-email

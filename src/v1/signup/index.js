@@ -15,17 +15,24 @@ exports.handler = async function (event, context, callback) {
     let password = '';
 
     if (event.body) {
-      const body = JSON.parse(event.body)
+      const body = JSON.parse(event.body);
       if (body.email) {
         email = body.email;
-      } else {
-        throw new Error('No email in body');
       }
       if (body.password) {
         password = body.password;
-      } else {
-        throw new Error('No password in body');
       }
+    }
+
+    if (!email || !password) {
+      console.error(`Missing input email: ${email} password: ${password}`);
+      const errorPayload = {
+        statusCode: 400,
+        body: JSON.stringify({
+          message: 'Missing input',
+        }),
+      };
+      return errorPayload;
     }
 
     const salt = bcrypt.genSaltSync();
@@ -34,9 +41,15 @@ exports.handler = async function (event, context, callback) {
     const checkUserData = await getUser(email, ACTIVE_USER_SORT_KEY);
     console.log(checkUserData);
     if (checkUserData.Item) {
-      throw new Error('User already exists');
+      const errorPayload = {
+        statusCode: 403,
+        body: JSON.stringify({
+          message: 'User already exists',
+        }),
+      };
+      return errorPayload;
     }
-    
+
     // create user in verification table
     // want a 6 digit verification token
     const verificationToken = Math.floor(Math.random() * 999999).toString();
@@ -72,7 +85,7 @@ exports.handler = async function (event, context, callback) {
       createUser(email, UNVERIFIED_USER_SORT_KEY, additionalCreateUserColumns),
       sgMail.send(msg),
     ]);
-    
+
     const data = {
       statusCode: 201,
     };

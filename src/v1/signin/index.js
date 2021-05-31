@@ -30,7 +30,9 @@ exports.handler = async function (event, context, callback) {
       } else {
         const errorPayload = {
           statusCode: 400,
-          body: 'No email in body',
+          body: JSON.stringify({
+            message: 'No email in body',
+          }),
         };
         return errorPayload;
       }
@@ -39,7 +41,9 @@ exports.handler = async function (event, context, callback) {
       } else {
         const errorPayload = {
           statusCode: 400,
-          body: 'No password in body',
+          body: JSON.stringify({
+            message: 'No password in body',
+          }),
         };
         return errorPayload;
       }
@@ -49,7 +53,9 @@ exports.handler = async function (event, context, callback) {
     if (!getUserData.Item) {
       const errorPayload = {
         statusCode: 404,
-        body: 'User does not exist',
+        body: JSON.stringify({
+          message: 'User does not exist',
+        }),
       };
       return errorPayload;
     }
@@ -60,7 +66,9 @@ exports.handler = async function (event, context, callback) {
     if (!validPassword) {
       const errorPayload = {
         statusCode: 401,
-        body: 'Invalid password',
+        body: JSON.stringify({
+          message: 'Invalid password',
+        }),
       };
       return errorPayload;
     }

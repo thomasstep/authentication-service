@@ -2,11 +2,11 @@ const sgMail = require('@sendgrid/mail');
 const {
   createUser,
   getUser,
-} = require('../../utils/database');
+} = require('../../../utils/database');
 const {
   ACTIVE_USER_SORT_KEY,
   RESET_USER_SORT_KEY,
-} = require('../../utils/constants');
+} = require('../../../utils/constants');
 
 exports.handler = async function (event, context, callback) {
   try {
@@ -16,7 +16,9 @@ exports.handler = async function (event, context, callback) {
       console.error(`Missing input email: ${email}`);
       const errorPayload = {
         statusCode: 400,
-        body: 'Missing input',
+        body: JSON.stringify({
+          message: 'Missing input',
+        }),
       };
       return errorPayload;
     }
@@ -25,7 +27,9 @@ exports.handler = async function (event, context, callback) {
     if (!checkUserData.Item) {
       const errorPayload = {
         statusCode: 404,
-        body: 'User does not exist',
+        body: JSON.stringify({
+          message: 'User does not exist',
+        }),
       };
       return errorPayload;
     }
