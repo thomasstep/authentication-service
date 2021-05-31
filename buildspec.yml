@@ -102,8 +102,7 @@ phases:
 # Reset Password
 #
       - mkdir ./node_modules
-      # TODO uncomment following line if/when verify route has node_modules
-      #- rsync -a ./src/$RESET_PASSWORD_ROUTE/node_modules/ ./node_modules > /dev/null
+      - rsync -a ./src/$RESET_PASSWORD_ROUTE/node_modules/ ./node_modules > /dev/null
       - rsync -a ./src/utils/node_modules/ ./node_modules > /dev/null
       - zip -r9 deployment-package ./src/$RESET_PASSWORD_ROUTE/index.js ./node_modules ./src/utils > /dev/null
       - aws s3 cp deployment-package.zip s3://$SOURCE_BUCKET_NAME/$RESET_PASSWORD_SOURCE_KEY > /dev/null
@@ -114,8 +113,7 @@ phases:
 # Reset Password Send Email
 #
       - mkdir ./node_modules
-      # TODO uncomment following line if/when verify route has node_modules
-      #- rsync -a ./src/$RESET_PASSWORD_SEND_EMAIL_ROUTE/node_modules/ ./node_modules > /dev/null
+      - rsync -a ./src/$RESET_PASSWORD_SEND_EMAIL_ROUTE/node_modules/ ./node_modules > /dev/null
       - rsync -a ./src/utils/node_modules/ ./node_modules > /dev/null
       - zip -r9 deployment-package ./src/$RESET_PASSWORD_SEND_EMAIL_ROUTE/index.js ./node_modules ./src/utils > /dev/null
       - aws s3 cp deployment-package.zip s3://$SOURCE_BUCKET_NAME/$RESET_PASSWORD_SEND_EMAIL_SOURCE_KEY > /dev/null
