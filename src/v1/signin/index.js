@@ -31,7 +31,7 @@ exports.handler = async function (event, context, callback) {
         const errorPayload = {
           statusCode: 400,
           body: JSON.stringify({
-            message: 'No email in body',
+            errorMessage: 'No email in body',
           }),
         };
         return errorPayload;
@@ -42,7 +42,7 @@ exports.handler = async function (event, context, callback) {
         const errorPayload = {
           statusCode: 400,
           body: JSON.stringify({
-            message: 'No password in body',
+            errorMessage: 'No password in body',
           }),
         };
         return errorPayload;
@@ -54,7 +54,7 @@ exports.handler = async function (event, context, callback) {
       const errorPayload = {
         statusCode: 404,
         body: JSON.stringify({
-          message: 'User does not exist',
+          errorMessage: 'User does not exist',
         }),
       };
       return errorPayload;
@@ -67,7 +67,7 @@ exports.handler = async function (event, context, callback) {
       const errorPayload = {
         statusCode: 401,
         body: JSON.stringify({
-          message: 'Invalid password',
+          errorMessage: 'Invalid password',
         }),
       };
       return errorPayload;

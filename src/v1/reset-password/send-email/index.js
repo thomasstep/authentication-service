@@ -17,7 +17,7 @@ exports.handler = async function (event, context, callback) {
       const errorPayload = {
         statusCode: 400,
         body: JSON.stringify({
-          message: 'Missing input',
+          errorMessage: 'Missing input',
         }),
       };
       return errorPayload;
@@ -28,12 +28,12 @@ exports.handler = async function (event, context, callback) {
       const errorPayload = {
         statusCode: 404,
         body: JSON.stringify({
-          message: 'User does not exist',
+          errorMessage: 'User does not exist',
         }),
       };
       return errorPayload;
     }
-    
+
     // create user in reset table
     // want a 6 digit reset token
     const resetToken = Math.floor(Math.random() * 999999).toString();
@@ -67,7 +67,7 @@ exports.handler = async function (event, context, callback) {
       createUser(email, RESET_USER_SORT_KEY, additionalCreateUserColumns),
       sgMail.send(msg),
     ]);
-    
+
     const data = {
       statusCode: 201,
     };

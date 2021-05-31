@@ -29,7 +29,7 @@ exports.handler = async function (event, context, callback) {
       const errorPayload = {
         statusCode: 400,
         body: JSON.stringify({
-          message: 'Missing input',
+          errorMessage: 'Missing input',
         }),
       };
       return errorPayload;
@@ -44,7 +44,7 @@ exports.handler = async function (event, context, callback) {
       const errorPayload = {
         statusCode: 403,
         body: JSON.stringify({
-          message: 'User already exists',
+          errorMessage: 'User already exists',
         }),
       };
       return errorPayload;
