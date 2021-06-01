@@ -25,7 +25,7 @@ async function createUser(email, status, additionalColumns) {
   if (status === UNVERIFIED_USER_SORT_KEY) {
     const verificationToken = additionalColumns.verificationToken;
     const hashedPassword = additionalColumns.hashedPassword;
-    const verificationTtl = Math.floor(Date.now() / 1000) + VERIFICATION_TTL;
+    const verificationTtl = (Math.floor(Date.now() / 1000) + VERIFICATION_TTL).toString();
 
     if (!verificationToken) {
       throw new Error('Missing verification token');
@@ -60,7 +60,7 @@ async function createUser(email, status, additionalColumns) {
   // RESET
   if (status === RESET_USER_SORT_KEY) {
     const resetToken = additionalColumns.resetToken;
-    const resetTtl = Math.floor(Date.now() / 1000) + RESET_TTL;
+    const resetTtl = (Math.floor(Date.now() / 1000) + RESET_TTL).toString();
 
     if (!resetToken) {
       throw new Error('Missing reset token');
