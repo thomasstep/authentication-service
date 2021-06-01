@@ -3,9 +3,10 @@ const {
 } = require('@aws-sdk/client-dynamodb');
 const {
   ACTIVE_USER_SORT_KEY,
-  DEFAULT_VERIFICATION_TTL,
+  RESET_TTL,
   RESET_USER_SORT_KEY,
   UNVERIFIED_USER_SORT_KEY,
+  VERIFICATION_TTL,
 } = require('../constants');
 const { client } = require('./databaseSession');
 
@@ -24,6 +25,7 @@ async function createUser(email, status, additionalColumns) {
   if (status === UNVERIFIED_USER_SORT_KEY) {
     const verificationToken = additionalColumns.verificationToken;
     const hashedPassword = additionalColumns.hashedPassword;
+    const verificationTtl = Math.floor(Date.now() / 1000) + VERIFICATION_TTL;
 
     if (!verificationToken) {
       throw new Error('Missing verification token');
@@ -40,7 +42,7 @@ async function createUser(email, status, additionalColumns) {
       S: hashedPassword,
     };
     item.ttl = {
-      N: process.env.VERIFICATION_TTL || DEFAULT_VERIFICATION_TTL,
+      N: verificationTtl,
     };
   }
   // ACTIVE
@@ -58,6 +60,7 @@ async function createUser(email, status, additionalColumns) {
   // RESET
   if (status === RESET_USER_SORT_KEY) {
     const resetToken = additionalColumns.resetToken;
+    const resetTtl = Math.floor(Date.now() / 1000) + RESET_TTL;
 
     if (!resetToken) {
       throw new Error('Missing reset token');
@@ -65,6 +68,9 @@ async function createUser(email, status, additionalColumns) {
 
     item.resetToken = {
       S: resetToken,
+    };
+    item.ttl = {
+      N: resetTtl,
     };
   }
 
