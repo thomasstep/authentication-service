@@ -45,6 +45,12 @@ Resources:
       Triggers:
         BuildType: BUILD
         Webhook: True
+        FilterGroups:
+        - - Type: EVENT
+            Pattern: PUSH,PULL_REQUEST_MERGED
+          - Type: HEAD_REF
+            Pattern: ^refs/heads/main$
+            ExcludeMatchedPattern: false
       ServiceRole: !GetAtt CodeBuildRole.Arn
       Artifacts:
         Type: NO_ARTIFACTS
