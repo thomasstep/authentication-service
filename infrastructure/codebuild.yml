@@ -2,11 +2,9 @@ Parameters:
   GitHubUrl:
     Type: String
     Description: URL for GitHub repo i.e. https://github.com/username/repository
-  GitHubAccessToken:
-    Type: AWS::SSM::Parameter::Value<String>
-    Description: Name of parameter with GitHub access token
-    Default: green-things-auth-github-token
-    NoEcho: True
+  SourceBucketName:
+    Type: String
+    Description: Name of source bucket
 
 Resources:
   CodeBuildRole:
@@ -40,14 +38,7 @@ Resources:
                   - ssm:Get*
                   - ssm:List*
                 Resource: '*'
-  CodeBuildCredentials:
-    Type: AWS::CodeBuild::SourceCredential
-    Properties:
-      ServerType: GITHUB
-      AuthType: PERSONAL_ACCESS_TOKEN
-      Token: !Ref GitHubAccessToken
   CodeBuild:
-    DependsOn: CodeBuildCredentials
     Type: AWS::CodeBuild::Project
     Properties:
       Description: CodeBuild for authentication service
@@ -61,6 +52,10 @@ Resources:
         Type: LINUX_CONTAINER
         ComputeType: BUILD_GENERAL1_SMALL
         Image: aws/codebuild/standard:4.0
+        EnvironmentVariables:
+          - Name: SOURCE_BUCKET_NAME
+            Value: !Ref SourceBucketName
+            Type: PLAINTEXT
       Source:
         Type: GITHUB
         Location: !Ref GitHubUrl
@@ -70,3 +65,8 @@ Resources:
     Properties:
       LogGroupName: !Sub "/aws/codebuild/${CodeBuild}"
       RetentionInDays: 7
+
+Outputs:
+  ProjectName:
+    Value: !Ref CodeBuild
+    Description: CodeBuild project name

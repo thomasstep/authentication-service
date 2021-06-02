@@ -5,7 +5,6 @@ Parameters:
   SourceBucket:
     Type: String
     Description: S3 bucket with source
-    Default: source-bucket-s3bucket-1e6txaiywjvno
 
   V1SignupKey:
     Type: String
@@ -82,7 +81,7 @@ Parameters:
   JwtCookieMaxAge:
     Type: String
     Description: Max age in seconds for the JWT cookie
-    Default: '21600'
+    Default: "21600"
 
   # reset password env vars
   # also uses EmailFromAddress, SendgridApiKey
@@ -93,7 +92,6 @@ Parameters:
   ResetPasswordUrl:
     Type: String
     Description: URL for resetting password
-    Default: 'https://thomasstep.com'
 
 Resources:
   LambdaIamRole:
@@ -109,7 +107,6 @@ Resources:
               Action:
                 - sts:AssumeRole
       Description: Authenticaion Service Lambda Function IAM Role
-      RoleName: AuthenticationServiceLambdaFunctionRole
       Policies:
         - PolicyName: root
           PolicyDocument:
@@ -443,7 +440,7 @@ Resources:
       EndpointConfiguration:
         Types:
           - REGIONAL
-      Name: AuthenticationServiceApiGateway
+      Name: !Sub "${AWS::StackName}-api"
       Policy:
         Version: 2012-10-17
         Statement:

@@ -1,5 +1,16 @@
 # authentication-service
 
+## AWS Infrastructure Prerequisites
+
+### Parameter Store
+
+- `sendgrid-api-key`
+- `authentication-service-github-token`
+
+###
+
+Fill in [`api-parameters.json`](./infrastructure/api-parameters.json)
+
 ## Generate RSA Keys
 
 ```bash

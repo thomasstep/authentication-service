@@ -9,24 +9,24 @@ env:
     RESET_PASSWORD_ROUTE: "v1/reset-password"
     RESET_PASSWORD_SEND_EMAIL_ROUTE: "v1/reset-password/send-email"
     SOURCE_BUCKET_NAME: "source-bucket-s3bucket-1e6txaiywjvno"
-    SIGNUP_SOURCE_KEY: "green-things-auth/v1/signup"
-    VERIFY_SOURCE_KEY: "green-things-auth/v1/verify"
-    SIGNIN_SOURCE_KEY: "green-things-auth/v1/signin"
-    SIGNOUT_SOURCE_KEY: "green-things-auth/v1/signout"
-    RESET_PASSWORD_SOURCE_KEY: "green-things-auth/v1/reset-password"
-    RESET_PASSWORD_SEND_EMAIL_SOURCE_KEY: "green-things-auth/v1/reset-password-send-email"
+    SIGNUP_SOURCE_KEY: "authentication-service-api/v1/signup"
+    VERIFY_SOURCE_KEY: "authentication-service-api/v1/verify"
+    SIGNIN_SOURCE_KEY: "authentication-service-api/v1/signin"
+    SIGNOUT_SOURCE_KEY: "authentication-service-api/v1/signout"
+    RESET_PASSWORD_SOURCE_KEY: "authentication-service-api/v1/reset-password"
+    RESET_PASSWORD_SEND_EMAIL_SOURCE_KEY: "authentication-service-api/v1/reset-password-send-email"
     TEMPLATE_PATH: "infrastructure/api.yml"
-    STACK_NAME: "green-things-auth"
+    STACK_NAME: "authentication-service-api"
     SIGNUP_PARAMETER_NAME: "V1SignupSourceVersion"
     VERIFY_PARAMETER_NAME: "V1VerifySourceVersion"
     SIGNIN_PARAMETER_NAME: "V1SigninSourceVersion"
     SIGNOUT_PARAMETER_NAME: "V1SignoutSourceVersion"
     RESET_PASSWORD_PARAMETER_NAME: "V1ResetPasswordSourceVersion"
     RESET_PASSWORD_SEND_EMAIL_PARAMETER_NAME: "V1ResetPasswordEmailSourceVersion"
-    # NOTE if you change the key names, they also need to be changed in constants.js
-    PRIVATE_KEY_S3_PATH: "green-things-auth/authentication-service.key"
+    # NOTE if you change the key names, they also need to be changed in constants.js and init.sh
+    PRIVATE_KEY_S3_PATH: "authentication-service-api/authentication-service.key"
     PRIVATE_KEY_NAME: "authentication-service.key"
-    PUBLIC_KEY_S3_PATH: "green-things-auth/authentication-service.key.pub"
+    PUBLIC_KEY_S3_PATH: "authentication-service-api/authentication-service.key.pub"
     PUBLIC_KEY_NAME: "authentication-service.key.pub"
 
 phases:
@@ -128,4 +128,4 @@ phases:
       - echo $SIGNOUT_S3_VERSION
       - echo $RESET_PASSWORD_S3_VERSION
       - echo $RESET_PASSWORD_SEND_EMAIL_S3_VERSION
-      - aws cloudformation deploy --template-file $CODEBUILD_SRC_DIR/$TEMPLATE_PATH --stack-name $STACK_NAME --capabilities CAPABILITY_NAMED_IAM --parameter-overrides $SIGNUP_PARAMETER_NAME=$SIGNUP_S3_VERSION $VERIFY_PARAMETER_NAME=$VERIFY_S3_VERSION $SIGNIN_PARAMETER_NAME=$SIGNIN_S3_VERSION $SIGNOUT_PARAMETER_NAME=$SIGNOUT_S3_VERSION $RESET_PASSWORD_PARAMETER_NAME=$RESET_PASSWORD_S3_VERSION $RESET_PASSWORD_SEND_EMAIL_PARAMETER_NAME=$RESET_PASSWORD_SEND_EMAIL_S3_VERSION
+      - aws cloudformation deploy --template-file $CODEBUILD_SRC_DIR/$TEMPLATE_PATH --stack-name $STACK_NAME --capabilities CAPABILITY_NAMED_IAM --parameter-overrides SourceBucket=$SOURCE_BUCKET_NAME V1SignupSourceVersion=$SIGNUP_S3_VERSION V1VerifySourceVersion=$VERIFY_S3_VERSION V1SigninSourceVersion=$SIGNIN_S3_VERSION V1SignoutSourceVersion=$SIGNOUT_S3_VERSION V1ResetPasswordSourceVersion=$RESET_PASSWORD_S3_VERSION V1ResetPasswordEmailSourceVersion=$RESET_PASSWORD_SEND_EMAIL_S3_VERSION
