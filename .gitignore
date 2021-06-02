@@ -109,4 +109,6 @@ dist
 export-env-vars.sh
 .DS_Store
 getobjectoutfile
-*.key
+authentication-service.key
+authentication-service.key.pub
+deploy*
