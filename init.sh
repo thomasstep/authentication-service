@@ -3,30 +3,38 @@
 # NOTE Fill these parameters in
 
 VERIFICATION_TTL=3600 # Default and recommended
-VERIFICATION_REDIRECT_URL=asdf
-SITE_URL=asdf
+VERIFICATION_REDIRECT_URL=
+SITE_URL=
 EMAIL_FROM_ADDRESS=your@email.com
 SENDGRID_API_KEY=sendgrid-api-key # Default and recommended
 JWT_COOKIE_MAX_AGE=21600 # Default and recommended
 RESET_TTL=3600 # Default and recommended
-RESET_PASSWORD_URL=asdf
+RESET_PASSWORD_URL=
+
+# It is not mandatory to add this but it is recommended
+# If a single AWS account needs multiple versions of the service
+#   differentiate them by added a suffix to the stacks
+#   i.e -dev, -prod, -xlwub
+# I recommend using an environment or random characters
+# The stack names will look best if the suffix starts with a dash (-)
+CLOUDFORMATION_STACK_SUFFIX=
 
 # The remaining variables do not need to be changed
 
 SOURCE_BUCKET_TEMPLATE_PATH=./infrastructure/versioned-bucket.yml
-SOURCE_BUCKET_STACK_NAME=authentication-service-source-bucket
+SOURCE_BUCKET_STACK_NAME=authentication-service-source-bucket$CLOUDFORMATION_STACK_SUFFIX
 
 PRIVATE_KEY_S3_PATH=authentication-service-api/authentication-service.key
 PUBLIC_KEY_S3_PATH=authentication-service-api/authentication-service.key.pub
 
 DYNAMODB_TEMPLATE_PATH=./infrastructure/dynamodb-tables.yml
-DYNAMODB_STACK_NAME=authentication-service-table
+DYNAMODB_STACK_NAME=authentication-service-table$CLOUDFORMATION_STACK_SUFFIX
 
 CODEBUILD_SOURCE_CREDENTIAL_TEMPLATE_PATH=./infrastructure/codebuild-source-credential.yml
-CODEBUILD_SOURCE_CREDENTIAL_STACK_NAME=codebuild-source-credential
+CODEBUILD_SOURCE_CREDENTIAL_STACK_NAME=codebuild-source-credential$CLOUDFORMATION_STACK_SUFFIX
 
 CODEBUILD_TEMPLATE_PATH=./infrastructure/codebuild.yml
-CODEBUILD_STACK_NAME=authentication-service-codebuild
+CODEBUILD_STACK_NAME=authentication-service-codebuild$CLOUDFORMATION_STACK_SUFFIX
 
 SIGNUP_SOURCE_KEY=authentication-service-api/v1/signup
 VERIFY_SOURCE_KEY=authentication-service-api/v1/verify
@@ -37,7 +45,7 @@ RESET_PASSWORD_SEND_EMAIL_SOURCE_KEY=authentication-service-api/v1/reset-passwor
 
 API_TEMPLATE_PATH=./infrastructure/api.yml
 API_PARAMETERS_PATH=./infrastructure/api-parameters.json
-API_STACK_NAME=authentication-service-api
+API_STACK_NAME=authentication-service-api$CLOUDFORMATION_STACK_SUFFIX
 
 GITHUB_URL=https://github.com/thomasstep/authentication-service # URL for GitHub repo i.e. https://github.com/thomasstep/authentication-service
 GITHUB_ACCESS_TOKEN_PARAMETER_NAME=codebuild-github-token # Name of GitHub access token stored in Parameter Store
@@ -83,7 +91,8 @@ aws cloudformation deploy \
   --stack-name $CODEBUILD_STACK_NAME \
   --capabilities CAPABILITY_IAM \
   --parameter-overrides GitHubUrl=$GITHUB_URL \
-    SourceBucketName=$SOURCE_BUCKET_NAME
+    SourceBucketName=$SOURCE_BUCKET_NAME \
+    AuthenticationApiStackName=$API_STACK_NAME
 
 # get codebuild project name
 CODEBUILD_PROJECT_NAME=$(aws cloudformation describe-stacks \

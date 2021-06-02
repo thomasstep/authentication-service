@@ -16,13 +16,6 @@ env:
     RESET_PASSWORD_SOURCE_KEY: "authentication-service-api/v1/reset-password"
     RESET_PASSWORD_SEND_EMAIL_SOURCE_KEY: "authentication-service-api/v1/reset-password-send-email"
     TEMPLATE_PATH: "infrastructure/api.yml"
-    STACK_NAME: "authentication-service-api"
-    SIGNUP_PARAMETER_NAME: "V1SignupSourceVersion"
-    VERIFY_PARAMETER_NAME: "V1VerifySourceVersion"
-    SIGNIN_PARAMETER_NAME: "V1SigninSourceVersion"
-    SIGNOUT_PARAMETER_NAME: "V1SignoutSourceVersion"
-    RESET_PASSWORD_PARAMETER_NAME: "V1ResetPasswordSourceVersion"
-    RESET_PASSWORD_SEND_EMAIL_PARAMETER_NAME: "V1ResetPasswordEmailSourceVersion"
     # NOTE if you change the key names, they also need to be changed in constants.js and init.sh
     PRIVATE_KEY_S3_PATH: "authentication-service-api/authentication-service.key"
     PRIVATE_KEY_NAME: "authentication-service.key"

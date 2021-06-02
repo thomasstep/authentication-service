@@ -5,6 +5,9 @@ Parameters:
   SourceBucketName:
     Type: String
     Description: Name of source bucket
+  AuthenticationApiStackName:
+    Type: String
+    Description: Name of stack to deploy code changes to
 
 Resources:
   CodeBuildRole:
@@ -61,6 +64,9 @@ Resources:
         EnvironmentVariables:
           - Name: SOURCE_BUCKET_NAME
             Value: !Ref SourceBucketName
+            Type: PLAINTEXT
+          - Name: STACK_NAME
+            Value: !Ref AuthenticationApiStackName
             Type: PLAINTEXT
       Source:
         Type: GITHUB
