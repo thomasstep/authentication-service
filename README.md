@@ -1,46 +1,140 @@
-# authentication-service
+# Authentication Service
 
-This was built for my personal projects. I had a need to create an authentication service and on the second time going through it, I decided to spin off a specific service that could be replicated whenever I needed. This is just the basic and I might add on as need be. If anyone has any suggestions or would like to contribute, please let me know.
+# Getting Started
 
-The idea to templatize this repo was to encourage writing any extensions on top of this service or to spin up a slightly modified version. I personally create spin off repos for each new service that I create that needs authentication. I slightly modify the init script to spin up the CloudFormation templates with unique names and update the infrastructure and code as needed.
-
-### Getting started
-
-Fill in `GITHUB_URL` in the [`init.sh` script](./init.sh) to point towards your fork.
-
-Add the following parameters to AWS Parameter Store:
-
-- `sendgrid-api-key`
-- `codebuild-github-token`
-
-These parameters need to be filled out as they are required parameters used in the templates. The templates can also be edited to use Secrets Manager instead of Parameter Store, but Parameter Store was chosen since it is free of charge.
-
-Finally run `./init.sh`. A bootstrapping script will run for a few minutes. The script is spinning up the necessary infrastructure and will eventually run the CodeBuild instance it has created to deploy code to the code. Finally, the script will echo out the URL of the API.
-
-### Manual Process
-
-It is also possible to use this service without going through the bootstrapping `init.sh` script. In order to do so, the CloudFormation templates need to be deployed on their own in the following order:
-
-- `versioned-bucket.yml`
-- `dynamodb-tables.yml`
-- `codebuild-source-credential.yml` (only if a GitHub token is not currently configured for your AWS account)
-- `codebuild.yml`
-- `api.yml`
-
-The `api.yml` template requires deployment packages to be available in the S3 Bucket created by the `versioned-bucket.yml` template under specific keys. I recommend uploading a dummy `zip` file to those paths just to create the API. After the API has been spun up, run the CodeBuild instance to deploy the actual code.
-
-**Generate RSA Keys**
-
-```bash
-ssh-keygen -t rsa -b 4096 -m PEM -f authentication-service.key -N ""
-openssl rsa -in authentication-service.key -pubout -outform PEM -out authentication-service.key.pub
-cat authentication-service.key
-cat authentication-service.key.pub
+```
+npm install
+cdk synth
+cdk deploy --all
 ```
 
-Those keys should be stored somewhere secure in AWS to be referenced by the template for the /signin route.
-While it is possible to store them in Parameter Store or Secrets Manager, I suggest storing them in an S3 bucket and adding them to the deployment package in CodeBuild. If this is not the preferred method, there will need to be some code changes in all the API routes that use keys and the the `buildspec.yml`.
+## Design
 
-## Using the API
+### Features
 
-The pattern of access matters here. A user needs to signup then verify their email. After verification, a user can signin, signout, and request to reset their password.
+As a user of the authentication service I would like to be able to
+- create new applications
+- sign up new users for my applications
+  - require that those users be verified by email
+- sign in users to my applications
+- allow my users to reset their passwords
+  - still send tokens to verify resetting passwords by email
+- store arbitrary user metadata like a phone number and full name
+
+### Data Model
+
+This will be a mash of the current data model with small adjustments for the new API.
+
+| Partition key       | Sort key              | { Attributes } |
+| ------------------- | --------------------- | -------------- |
+| `<app-id>`          | `application`         | `{ applicationOwner: string, applicationState: enum{active, suspended}, emailFromName: string, resetPasswordUrl: string, verificationUrl: string, userCount: number, created: timestamp }` |
+| `<app-id>`          | `active#<user-email>` | `{ hashedPassword: string, metadata: map/JSON, lastSignin: timestamp, created: timestamp }` |
+| `<app-id>`          | `unverified#<token>`  | `{ email: string, hashedPassword: string, ttl: timestamp }` |
+| `<app-id>`          | `reset#<token>`       | `{ email: string, ttl: timestamp }` |
+| `<app-id>`          | `refresh#<token>`     | `{ email: string, ttl: timestamp }` |
+
+Changes from the current data model:
+- Application profiles
+  - Removed: `applicationSecret`
+  - Added: `created`
+- User profiles
+  - Added: `metadata`, `lastSeen`, `created`
+
+### API Design
+
+#### API Keys
+
+All calls require an API key unless otherwise noted. The endpoints that are not API key protected are meant to be called from a front end where API keys should not be leaked. These endpoints include almost all of the `users` endpoints with the exception of `GET /applications/{applicationId}/users`. The thought behind API key usage is that an API key should only be held by the owner of the deployment. The owner/API key holder would then have full administrative rights over the deployment including the applications and users created within it. The managed version of this service will not distribute API keys but rather include an authorization layer on top of the authentication API to decide whether or not a user of the managed version is allowed to make particular calls on the authentication API.
+
+#### Endpoints
+
+- `POST /applications`
+  - Create application ID, state: active, userCount: 0, created: now()
+  - Response: application ID
+- `GET /applications/{applicationId}`
+  - Response: application info
+- `PUT /applications/{applicationId}`
+  - Can change data including state of application
+  - Async
+  - Response: accepted
+- `DELETE /applications/{applicationId}`
+  - Can only be deleted if the `userCount` is `0`
+  - Response: no content
+- `POST /applications/{applicationId}/users`
+  - Sign up a user
+  - Does not required an API key
+  - Payload:
+    ```json
+    {
+      "email": "email@address.com",
+      "password": "pass"
+    }
+    ```
+  - Check for user conflicts
+  - Create unverified item and send verification email
+  - Response: no content
+- `GET /applications/{applicationId}/users`
+  - Response: list of user emails
+- `GET /applications/{applicationId}/users/verification`
+  - Verify a new user
+  - Does not required an API key
+  - Payload:
+    ```
+    ?token=asdf
+    ```
+  - Creates user with email corresponding the token
+  - Check the current time is earlier than `ttl`
+  - Delete unverified item
+  - Response Payload: no content
+- `GET /applications/{applicationId}/users/token`
+  - Sign in a user
+  - Does not required an API key
+  - `application/x-www-form-urlencoded` Payload:
+    ```
+    ?refresh-token=asdf
+    OR
+    ?email=email@address.com&password=pass
+    ```
+  - If `refreshToken`, verify the token is before `ttl`, delete item, create new refresh token
+  - If `email` and `password`, verify against hash
+  - Either way, create new refresh token item and send new JWT and refresh token
+  - Response Payload:
+    ```json
+    {
+      "token": "asdf",
+      "refreshToken": "asdf"
+    }
+    ```
+- `POST /applications/{applicationId}/users/password`
+  - Change a user's password after they verify email ownership with the token
+  - Does not required an API key
+  - Payload:
+    ```json
+    {
+      "token": "asdf",
+      "password": "newPass"
+    }
+    ```
+  - Updates password for user with the given token
+  - Check the current time is earlier than `ttl`
+  - Delete reset password item
+  - Response: no content
+- `GET /applications/{applicationId}/users/{email}/password/reset`
+  - Request a new password for a user
+  - Does not required an API key
+  - Async
+  - Sends email with token to reset password
+  - Response: accepted
+- `GET /applications/{applicationId}/users/{email}`
+  - Retrieve a user's metadata
+  - Does not require an API key but does require a valid JWT from the authentication service itself
+  - Response: user information using current JWT
+- `PUT /applications/{applicationId}/users/{email}`
+  - Update a user's metadata
+  - Does not require an API key but does require a valid JWT from the authentication service itself
+  - Response: user information using current JWT
+- `DELETE /applications/{applicationId}/users/{email}`
+  - Does not require an API key but does require a valid JWT from the authentication service itself
+  - Async
+  - Reduces application's `userCount`
+  - Response: accepted
