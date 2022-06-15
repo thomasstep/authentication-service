@@ -63,7 +63,6 @@ All calls require an API key unless otherwise noted. The endpoints that are not 
   - Response: application info
 - `PUT /applications/{applicationId}`
   - Can change data including state of application
-  - Async
   - Response: accepted
 - `DELETE /applications/{applicationId}`
   - Can only be deleted if the `userCount` is `0`
@@ -124,8 +123,11 @@ All calls require an API key unless otherwise noted. The endpoints that are not 
       "refreshToken": "asdf"
     }
     ```
-- `GET /applications/{applicationId}/users/{email}/password/reset`
-  - Request a new password for a user
+- `GET /applications/{applicationId}/users/password/reset`
+  - Request a new password for a user- Payload:
+    ```
+    ?email=email@address.com
+    ```
   - Does not required an API key
   - Async
   - Check that hashed email exists as an active user
