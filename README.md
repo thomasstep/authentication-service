@@ -20,18 +20,26 @@ As a user of the authentication service I would like to be able to
 - allow my users to reset their passwords
   - still send tokens to verify resetting passwords by email
 - store arbitrary user metadata like a phone number and full name
+- Future Improvements:
+  - passwordless sign ins
+  - third party oauth
+  - creating service accounts
 
 ### Data Model
 
 This will be a mash of the current data model with small adjustments for the new API.
 
-| Partition key       | Sort key              | { Attributes } |
-| ------------------- | --------------------- | -------------- |
-| `<app-id>`          | `application`         | `{ applicationOwner: string, applicationState: enum{active, suspended}, emailFromName: string, resetPasswordUrl: string, verificationUrl: string, userCount: number, created: timestamp }` |
-| `<app-id>`          | `active#<user-email>` | `{ hashedPassword: string, metadata: map/JSON, lastSignin: timestamp, created: timestamp }` |
-| `<app-id>`          | `unverified#<token>`  | `{ email: string, hashedPassword: string, ttl: timestamp }` |
-| `<app-id>`          | `reset#<token>`       | `{ email: string, ttl: timestamp }` |
-| `<app-id>`          | `refresh#<token>`     | `{ email: string, ttl: timestamp }` |
+| Partition key       | Sort key               | Attributes     |
+| ------------------- | ---------------------- | -------------- |
+| `<app-id>`          | `application`          | `{ applicationOwner: string, applicationState: enum{active, suspended}, emailFromName: string, resetPasswordUrl: string, verificationUrl: string, userCount: number, created: timestamp }` |
+| `<app-id>`          | `user#<id>`                 | `{ methodsUsed: []signinMethods{email, phone, google, etc.}, lastPasswordChange: timestamp, lastSignin: timestamp, created: timestamp }` |
+| `<app-id>`          | `email#<hashedEmail>`  | `{ id: string, hashedPassword: string }` |
+| `<app-id>`          | `phone#<hashedNumber>` | `{ id: string }` |
+| `<app-id>`          | `google#<googleId>`    | `{ id: string }` |
+| `<app-id>`          | `unverified#<token>`   | `{ hashedEmail: string, hashedPassword: string, (optional) id: string, ttl: timestamp }` |
+| `<app-id>`          | `reset#<token>`        | `{ hashedEmail: string, ttl: timestamp }` |
+| `<app-id>`          | `refresh#<token>`      | `{ hashedEmail: string, ttl: timestamp }` |
+| `<app-id>`          | `passwordless#<token>` | `{ id: string, ttl: timestamp }` |
 
 Changes from the current data model:
 - Application profiles
@@ -73,11 +81,9 @@ All calls require an API key unless otherwise noted. The endpoints that are not 
   - Check for user conflicts
   - Create unverified item and send verification email
   - Response: no content
-- `GET /applications/{applicationId}/users`
-  - Response: list of user emails
 - `GET /applications/{applicationId}/users/verification`
   - Verify a new user
-  - Does not required an API key
+  - Does not require an API key
   - Payload:
     ```
     ?token=asdf
@@ -86,14 +92,27 @@ All calls require an API key unless otherwise noted. The endpoints that are not 
   - Check the current time is earlier than `ttl`
   - Delete unverified item
   - Response Payload: no content
+- `GET /applications/{applicationId}/users/otp`
+  - Sign in a user with passwordless login
+  - Does not require an API key
+  - Async
+  - `application/x-www-form-urlencoded` Payload:
+    ```
+    ?phone=555-555-5555
+    OR
+    ?email=email@address.com
+    ```
+  - Response Payload: accepted
 - `GET /applications/{applicationId}/users/token`
   - Sign in a user
-  - Does not required an API key
+  - Does not require an API key
   - `application/x-www-form-urlencoded` Payload:
     ```
     ?refresh-token=asdf
     OR
     ?email=email@address.com&password=pass
+    OR
+    ?otp=token
     ```
   - If `refreshToken`, verify the token is before `ttl`, delete item, create new refresh token
   - If `email` and `password`, verify against hash
@@ -105,6 +124,13 @@ All calls require an API key unless otherwise noted. The endpoints that are not 
       "refreshToken": "asdf"
     }
     ```
+- `GET /applications/{applicationId}/users/{email}/password/reset`
+  - Request a new password for a user
+  - Does not required an API key
+  - Async
+  - Check that hashed email exists as an active user
+  - Send email with token to reset password
+  - Response: accepted
 - `POST /applications/{applicationId}/users/password`
   - Change a user's password after they verify email ownership with the token
   - Does not required an API key
@@ -119,22 +145,30 @@ All calls require an API key unless otherwise noted. The endpoints that are not 
   - Check the current time is earlier than `ttl`
   - Delete reset password item
   - Response: no content
-- `GET /applications/{applicationId}/users/{email}/password/reset`
-  - Request a new password for a user
-  - Does not required an API key
-  - Async
-  - Sends email with token to reset password
-  - Response: accepted
-- `GET /applications/{applicationId}/users/{email}`
+- `GET /applications/{applicationId}/users/me`
   - Retrieve a user's metadata
   - Does not require an API key but does require a valid JWT from the authentication service itself
   - Response: user information using current JWT
-- `PUT /applications/{applicationId}/users/{email}`
-  - Update a user's metadata
+- `PUT /applications/{applicationId}/users/me`
+  - Update a user's account (by `id`)
+  - Allow adding signin method (would require verification flow)
   - Does not require an API key but does require a valid JWT from the authentication service itself
   - Response: user information using current JWT
-- `DELETE /applications/{applicationId}/users/{email}`
+- `DELETE /applications/{applicationId}/users/me`
   - Does not require an API key but does require a valid JWT from the authentication service itself
   - Async
   - Reduces application's `userCount`
   - Response: accepted
+
+#### Token Structure
+
+Configurage parts: `iss`, `aud` (will not be present if not configured)
+
+```json
+{
+  "iss": "https://auth.thomasstep.com",
+  "sub": "<id>",
+  "exp": "<timestamp>",
+  "iat": "<timestamp>"
+}
+```
