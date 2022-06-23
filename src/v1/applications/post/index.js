@@ -8,11 +8,11 @@ const { port } = require('./port');
 async function handler(event) {
   // eslint-disable-next-line no-shadow, no-unused-vars
   const result = await withErrorHandling(async (event, auth) => {
-    const sites = await port(auth);
+    const applicationId = await port();
     const data = {
       statusCode: GOOD_STATUS_CODE,
       body: JSON.stringify({
-        ...sites,
+        id: applicationId,
       }),
     };
     return data;

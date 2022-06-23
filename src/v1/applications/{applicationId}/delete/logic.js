@@ -1,7 +1,8 @@
+const { ExistingUsersError } = require('/opt/errors');
 const {
-  MissingUniqueIdError,
-} = require('/opt/errors');
-const { readUser } = require('/opt/ports');
+  readApplication,
+  removeApplication,
+} = require('/opt/ports');
 
 /**
  * Business logic
@@ -9,9 +10,14 @@ const { readUser } = require('/opt/ports');
  * @param {string} auth.uniqueId Unique ID of the client
  * @returns {string}
  */
+async function logic(applicationId) {
+  const applicationData = await readApplication(applicationId);
+  const { userCount } = applicationData;
+  if (userCount > 0) {
+    throw new ExistingUsersError('There are still users using this application');
+  }
 
-async function logic(auth) {
-  return 'smth';
+  await removeApplication(applicationId);
 }
 
 module.exports = {

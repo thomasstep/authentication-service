@@ -1,17 +1,13 @@
-const {
-  MissingUniqueIdError,
-} = require('/opt/errors');
-const { readUser } = require('/opt/ports');
+const { createApplication } = require('/opt/ports');
 
 /**
  * Business logic
- * @param {Object} auth Holds relevant authentication info
- * @param {string} auth.uniqueId Unique ID of the client
- * @returns {string}
+ * @returns {string} Application ID
  */
 
-async function logic(auth) {
-  return 'smth';
+async function logic() {
+  const applicationId = await createApplication();
+  return applicationId;
 }
 
 module.exports = {

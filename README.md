@@ -31,8 +31,8 @@ This will be a mash of the current data model with small adjustments for the new
 
 | Partition key       | Sort key               | Attributes     |
 | ------------------- | ---------------------- | -------------- |
-| `<app-id>`          | `application`          | `{ applicationOwner: string, applicationState: enum{active, suspended}, emailFromName: string, resetPasswordUrl: string, verificationUrl: string, userCount: number, created: timestamp }` |
-| `<app-id>`          | `user#<id>`                 | `{ methodsUsed: []signinMethods{email, phone, google, etc.}, lastPasswordChange: timestamp, lastSignin: timestamp, created: timestamp }` |
+| `<app-id>`          | `application`          | `{ applicationState: enum{active, suspended}, emailFromName: string, resetPasswordUrl: string, verificationUrl: string, userCount: number, created: timestamp }` |
+| `<app-id>`          | `user#<id>`            | `{ methodsUsed: []signinMethods{email, phone, google, etc.}, lastPasswordChange: timestamp, lastSignin: timestamp, created: timestamp }` |
 | `<app-id>`          | `email#<hashedEmail>`  | `{ id: string, hashedPassword: string }` |
 | `<app-id>`          | `phone#<hashedNumber>` | `{ id: string }` |
 | `<app-id>`          | `google#<googleId>`    | `{ id: string }` |
