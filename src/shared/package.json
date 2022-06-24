@@ -12,6 +12,7 @@
   "dependencies": {
     "@aws-sdk/client-dynamodb": "^3.113.0",
     "@aws-sdk/lib-dynamodb": "^3.113.0",
+    "bcrypt": "^5.0.1",
     "winston": "^3.7.2"
   }
 }

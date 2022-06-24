@@ -17,6 +17,7 @@ const CONSTANTS = {
   REFRESH_TOKEN_SORT_KEY: 'refresh',
   PASSWORDLESS_TOKEN_SORT_KEY: 'passwordless',
   DEFAULT_TOKEN_TTL: 2592000, // 30 days in seconds
+  VERIFICATION_TTL: 900, // 30 days in seconds
   TTL_ATTRIBUTE_NAME: 'ttl',
   // Status codes
   GOOD_STATUS_CODE: 200,

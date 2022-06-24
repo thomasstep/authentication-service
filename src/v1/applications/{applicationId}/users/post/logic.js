@@ -1,7 +1,8 @@
+const { hash } = require('/opt/hashing');
 const {
-  MissingUniqueIdError,
-} = require('/opt/errors');
-const { readUser } = require('/opt/ports');
+  createUser,
+  createEmailSignInVerification,
+} = require('/opt/ports');
 
 /**
  * Business logic
@@ -10,8 +11,13 @@ const { readUser } = require('/opt/ports');
  * @returns {string}
  */
 
-async function logic(auth) {
-  return 'smth';
+async function logic(applicationId, email, password) {
+  const userId = await createUser(applicationId);
+  const emailHash = hash(email);
+  const passwordHash = hash(password);
+  const verificationToken = await createEmailSignInVerification(applicationId, userId, emailHash, passwordHash);
+  // TODO await sendVerificationEmail(verificationToken);
+  return userId;
 }
 
 module.exports = {

@@ -1,11 +1,17 @@
-const { randomUUID } = require('crypto');
+const {
+  randomUUID,
+  randomInt,
+} = require('crypto');
 
 function generateToken() {
-  const newUuid = randomUUID();
+  return randomUUID();
+}
 
-  return newUuid;
+function generateEasyToken() {
+  return randomInt(100000, 999999);
 }
 
 module.exports = {
   generateToken,
+  generateEasyToken,
 };

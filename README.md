@@ -33,13 +33,13 @@ This will be a mash of the current data model with small adjustments for the new
 | ------------------- | ---------------------- | -------------- |
 | `<app-id>`          | `application`          | `{ applicationState: enum{active, suspended}, emailFromName: string, resetPasswordUrl: string, verificationUrl: string, userCount: number, created: timestamp }` |
 | `<app-id>`          | `user#<id>`            | `{ methodsUsed: []signinMethods{email, phone, google, etc.}, lastPasswordChange: timestamp, lastSignin: timestamp, created: timestamp }` |
-| `<app-id>`          | `email#<hashedEmail>`  | `{ id: string, hashedPassword: string }` |
-| `<app-id>`          | `phone#<hashedNumber>` | `{ id: string }` |
-| `<app-id>`          | `google#<googleId>`    | `{ id: string }` |
-| `<app-id>`          | `unverified#<token>`   | `{ hashedEmail: string, hashedPassword: string, (optional) id: string, ttl: timestamp }` |
-| `<app-id>`          | `reset#<token>`        | `{ hashedEmail: string, ttl: timestamp }` |
-| `<app-id>`          | `refresh#<token>`      | `{ hashedEmail: string, ttl: timestamp }` |
-| `<app-id>`          | `passwordless#<token>` | `{ id: string, ttl: timestamp }` |
+| `<app-id>`          | `email#<emailHash>`  | `{ userId: string, passwordHash: string, created: timestamp }` |
+| `<app-id>`          | `phone#<hashedNumber>` | `{ userId: string, created: timestamp }` |
+| `<app-id>`          | `google#<googleId>`    | `{ userId: string, created: timestamp }` |
+| `<app-id>`          | `unverified#<token>`   | `{ emailHash: string, passwordHash: string, userId: string, ttl: timestamp }` |
+| `<app-id>`          | `reset#<token>`        | `{ emailHash: string, ttl: timestamp }` |
+| `<app-id>`          | `refresh#<token>`      | `{ emailHash: string, ttl: timestamp }` |
+| `<app-id>`          | `passwordless#<token>` | `{ userId: string, ttl: timestamp }` |
 
 Changes from the current data model:
 - Application profiles
