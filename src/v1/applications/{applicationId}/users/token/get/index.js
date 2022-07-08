@@ -8,11 +8,16 @@ const { port } = require('./port');
 async function handler(event) {
   // eslint-disable-next-line no-shadow, no-unused-vars
   const result = await withErrorHandling(async (event, auth) => {
-    const sites = await port(auth);
+    const applicationId = event.pathParameters.applicationId;
+    const email = event.pathParameters.email;
+    const password = event.pathParameters.password;
+    // Not doing refresh token now because giving one to a SPA is unsecure
+    // const refreshToken = event.pathParameters.refreshToken;
+    const token = await port(applicationId, email, password);
     const data = {
       statusCode: GOOD_STATUS_CODE,
       body: JSON.stringify({
-        ...sites,
+        token,
       }),
     };
     return data;

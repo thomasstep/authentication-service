@@ -1,7 +1,10 @@
 const {
-  MissingUniqueIdError,
+  MissingResourceError,
 } = require('/opt/errors');
-const { readUser } = require('/opt/ports');
+const { hash } = require('/opt/hashing');
+const {
+  readResetToken,
+} = require('/opt/ports');
 
 /**
  * Business logic
@@ -10,8 +13,23 @@ const { readUser } = require('/opt/ports');
  * @returns {string}
  */
 
-async function logic(auth) {
-  return 'smth';
+async function logic(applicationId, token, password) {
+  const resetTokenData = await readResetToken(applicationId, token);
+  const {
+    emailHash,
+    ttl,
+  } = resetTokenData;
+  if (!emailHash) {
+    throw new MissingResourceError('Invalid token.');
+  }
+
+  const currentTimestamp = Math.floor(Date.now() / 1000);
+  if (currentTimestamp > ttl) {
+    throw new MissingResourceError('Invalid token.');
+  }
+
+  const passwordHash = hash(password);
+  await updatePassword(emailHash, passwordHash);
 }
 
 module.exports = {

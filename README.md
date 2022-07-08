@@ -2,7 +2,12 @@
 
 # Getting Started
 
-```
+```sh
+# Install shared directory packages
+cd src/shared
+npm install
+# Install project-level packages
+cd ../..
 npm install
 cdk synth
 cdk deploy --all
@@ -32,14 +37,14 @@ This will be a mash of the current data model with small adjustments for the new
 | Partition key       | Sort key               | Attributes     |
 | ------------------- | ---------------------- | -------------- |
 | `<app-id>`          | `application`          | `{ applicationState: enum{active, suspended}, emailFromName: string, resetPasswordUrl: string, verificationUrl: string, userCount: number, created: timestamp }` |
-| `<app-id>`          | `user#<id>`            | `{ methodsUsed: []signinMethods{email, phone, google, etc.}, lastPasswordChange: timestamp, lastSignin: timestamp, created: timestamp }` |
-| `<app-id>`          | `email#<emailHash>`  | `{ userId: string, passwordHash: string, created: timestamp }` |
+| `<app-id>`          | `user#<id>`            | `{ methodsUsed: []signinMethods{email, phone, google, etc.}, lastSignin: timestamp, created: timestamp }` |
+| `<app-id>`          | `unverified#<token>`   | `{ userId: string, emailHash: string, passwordHash: string, ttl: timestamp }` |
+| `<app-id>`          | `email#<emailHash>`    | `{ userId: string, passwordHash: string, lastPasswordChange: timestamp, created: timestamp }` |
+| `<app-id>`          | `reset#<token>`        | `{ emailHash: string, ttl: timestamp }` |
 | `<app-id>`          | `phone#<hashedNumber>` | `{ userId: string, created: timestamp }` |
 | `<app-id>`          | `google#<googleId>`    | `{ userId: string, created: timestamp }` |
-| `<app-id>`          | `unverified#<token>`   | `{ emailHash: string, passwordHash: string, userId: string, ttl: timestamp }` |
-| `<app-id>`          | `reset#<token>`        | `{ emailHash: string, ttl: timestamp }` |
-| `<app-id>`          | `refresh#<token>`      | `{ emailHash: string, ttl: timestamp }` |
 | `<app-id>`          | `passwordless#<token>` | `{ userId: string, ttl: timestamp }` |
+<!-- | `<app-id>`          | `refresh#<token>`      | `{ emailHash: string, ttl: timestamp }` | -->
 
 Changes from the current data model:
 - Application profiles
@@ -58,9 +63,13 @@ All calls require an API key unless otherwise noted. The endpoints that are not 
 
 - `POST /applications`
   - Create application ID, state: active, userCount: 0, created: now()
+  - Create RSA keys and upload to S3 `private/{applicationId}/private.key`
+  - Store public key as JWKS in `public/{applicationId}/jwks.json`
   - Response: application ID
 - `GET /applications/{applicationId}`
   - Response: application info
+- `GET /applications/{applicationId}/jwks.json`
+  - Response: S3 service proxy to `public/{applicationId}/jwks.json`
 - `PUT /applications/{applicationId}`
   - Can change data including state of application
   - Response: accepted
@@ -107,28 +116,25 @@ All calls require an API key unless otherwise noted. The endpoints that are not 
   - Does not require an API key
   - `application/x-www-form-urlencoded` Payload:
     ```
-    ?refresh-token=asdf
-    OR
     ?email=email@address.com&password=pass
     OR
     ?otp=token
     ```
-  - If `refreshToken`, verify the token is before `ttl`, delete item, create new refresh token
   - If `email` and `password`, verify against hash
-  - Either way, create new refresh token item and send new JWT and refresh token
+  - Read private key from S3 `private/{applicationId}/private.key`
   - Response Payload:
     ```json
     {
-      "token": "asdf",
-      "refreshToken": "asdf"
+      "token": "asdf"
     }
     ```
 - `GET /applications/{applicationId}/users/password/reset`
-  - Request a new password for a user- Payload:
+  - Request a new password for a user
+  - Payload:
     ```
     ?email=email@address.com
     ```
-  - Does not required an API key
+  - Does not require an API key
   - Async
   - Check that hashed email exists as an active user
   - Send email with token to reset password
@@ -154,6 +160,7 @@ All calls require an API key unless otherwise noted. The endpoints that are not 
 - `PUT /applications/{applicationId}/users/me`
   - Update a user's account (by `id`)
   - Allow adding signin method (would require verification flow)
+  - Allow changing password (not "forgot password" but a normal change)
   - Does not require an API key but does require a valid JWT from the authentication service itself
   - Response: user information using current JWT
 - `DELETE /applications/{applicationId}/users/me`

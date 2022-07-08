@@ -20,6 +20,12 @@ const signInTypes = {
   EMAIL: EMAIL_SIGN_IN_SORT_KEY,
 };
 
+function now() {
+  const nowDate = new Date();
+  const now = nowDate.toISOString();
+  return now;
+}
+
 /**
  * @param {string} id User's ID
  * @returns {string} Formatted sort key
@@ -37,11 +43,19 @@ function constructEmailSignInVerificationSortKey(token) {
 }
 
 /**
- * @param {string} email
+ * @param {string} emailHash
  * @returns {string} Formatted sort key
  */
 function constructEmailSignInSortKey(emailHash) {
   return `${EMAIL_SIGN_IN_SORT_KEY}#${emailHash}`;
+}
+
+/**
+ * @param {string} token
+ * @returns {string} Formatted sort key
+ */
+ function constructResetPasswordSortKey(token) {
+  return `${RESET_TOKEN_SORT_KEY}#${token}`;
 }
 
 
@@ -51,20 +65,22 @@ function constructEmailSignInSortKey(emailHash) {
  */
 async function create(applicationId) {
   const userId = generateToken();
-  const nowDate = new Date();
-  const now = nowDate.toISOString();
+  const now = now();
   await documentClient.put({
     TableName,
     Item: {
       id: applicationId,
       secondaryId: constructUserSortKey(userId),
-      lastPasswordChange: now,
       lastSignin: now,
       created: now,
     },
     ConditionExpression: 'attribute_not_exists(id)',
   });
   return userId;
+}
+
+async function addSignInMethod(applicationId, id, method) {
+  // TODO add method to methodsUsed set
 }
 
 /**
@@ -99,6 +115,7 @@ async function createEmailSignInVerification(applicationId, id, emailHash, passw
  * @returns
  */
 async function createEmailSignIn(applicationId, id, emailHash, passwordHash) {
+  const now = now();
   await documentClient.put({
     TableName,
     Item: {
@@ -106,7 +123,30 @@ async function createEmailSignIn(applicationId, id, emailHash, passwordHash) {
       secondaryId: constructEmailSignInSortKey(emailHash),
       userId: id,
       passwordHash,
+      lastPasswordChange: now,
       created: now,
+    },
+    ConditionExpression: 'attribute_not_exists(secondaryId)',
+  });
+}
+
+/**
+ * @param {string) applicationId Application ID
+ * @param {string) id User's ID
+ * @param {string} emailHash User's email hashed
+ * @param {string} passwordHash User's password hashed
+ * @returns
+ */
+async function createResetToken(applicationId, emailHash) {
+  const ttl = Math.floor(Date.now() / 1000) + VERIFICATION_TTL;
+  const token = generateEasyToken();
+  await documentClient.put({
+    TableName,
+    Item: {
+      id: applicationId,
+      secondaryId: constructResetPasswordSortKey(token),
+      emailHash,
+      ttl,
     },
     ConditionExpression: 'attribute_not_exists(secondaryId)',
   });
@@ -126,23 +166,22 @@ async function createEmailSignIn(applicationId, id, emailHash, passwordHash) {
  *                   }
  */
 async function read(applicationId, id) {
-  const user = await documentClient.get({
-    TableName,
-    Key: {
-      id: applicationId,
-      secondaryId: constructUserSortKey(userId),
-    },
+  return readAttrs({
+    id: applicationId,
+    secondaryId: constructUserSortKey(id),
   });
-  if (!user.Item) {
-    return {};
-  }
+}
 
-  const {
-    id: throwAwayKey,
-    secondaryId: throwAwaySortKey,
-    ...userData
-  } = user.Item;
-  return userData;
+/**
+ * @param {string) applicationId Application ID
+ * @param {string} token Verification token
+ * @returns
+ */
+async function readEmailSignInVerification(applicationId, token) {
+  return readAttrs({
+    id: applicationId,
+    secondaryId: constructEmailSignInVerificationSortKey(token),
+  });
 }
 
 /**
@@ -150,13 +189,33 @@ async function read(applicationId, id) {
  * @param {string} emailHash User's email hashed
  * @returns
  */
-async function readEmailSignInVerification(applicationId, token) {
+async function readEmailSignIn(applicationId, emailHash) {
+  return readAttrs({
+    id: applicationId,
+    secondaryId: constructEmailSignInSortKey(emailHash),
+  });
+}
+
+/**
+ * @param {string) applicationId Application ID
+ * @param {string} token Reset password token
+ * @returns
+ */
+async function readResetToken(applicationId, token) {
+  return readAttrs({
+    id: applicationId,
+    secondaryId: constructResetPasswordSortKey(token),
+  });
+}
+
+/**
+ * @param {Object) itemPayload Object for DDB GET Item
+ * @returns {Object}
+ */
+async function readAttrs(itemPayload) {
   const item = await documentClient.get({
     TableName,
-    Item: {
-      id: applicationId,
-      secondaryId: constructEmailSignInVerificationSortKey(token),
-    },
+    Item: itemPayload,
   });
   if (!item.Item) {
     return {};
@@ -172,27 +231,16 @@ async function readEmailSignInVerification(applicationId, token) {
 
 /**
  * @param {string) applicationId Application ID
- * @param {string} emailHash User's email hashed
- * @returns
+ * @param {string) emailHash User's email hash
+ * @param {string} passwordHash New user password hash
  */
-async function readEmailSignIn(applicationId, emailHash) {
-  const emailSignIn = await documentClient.get({
-    TableName,
-    Item: {
-      id: applicationId,
-      secondaryId: constructEmailSignInSortKey(emailHash),
-    },
-  });
-  if (!emailSignIn.Item) {
-    return {};
-  }
-
-  const {
-    id: throwAwayKey,
-    secondaryId: throwAwaySortKey,
-    ...emailSignInData
-  } = emailSignIn.Item;
-  return emailSignInData;
+async function updatePassword(applicationId, emailHash, passwordHash) {
+  const now = now();
+  const updateParams = constructUpdates({
+    passwordHash,
+    lastPasswordChange: now,
+  })
+  await genericUpdate(applicationId, constructEmailSignInSortKey(emailHash), updateParams);
 }
 
 /**
@@ -206,15 +254,34 @@ async function readEmailSignIn(applicationId, emailHash) {
  * @param {Object} updateParams.ExpressionAttributeValues
  * @returns
  */
-async function update(applicationId, id, updateParams) {
+async function genericUpdate(id, secondaryId, updateParams) {
   await documentClient.update({
     TableName,
     Key: {
-      id: applicationId,
-      secondaryId: constructUserSortKey(userId),
+      id,
+      secondaryId,
     },
     ...updateParams,
   });
+}
+
+/**
+ * To remove a user item
+ * @param {string) applicationId Application ID
+ * @param {string) id User's ID
+ * @returns
+ */
+async function remove(applicationId, id) {
+  await genericRemove(applicationId, constructUserSortKey(id));
+}
+
+/**
+ * @param {string) applicationId Application ID
+ * @param {string) id User's ID
+ * @returns
+ */
+async function removeEmailSignInVerification(applicationId, token) {
+  await genericRemove(applicationId, constructEmailSignInVerificationSortKey(token));
 }
 
 /**
@@ -223,12 +290,12 @@ async function update(applicationId, id, updateParams) {
  * @param {string) id User's ID
  * @returns
  */
-async function remove(applicationId, id) {
+async function genericRemove(id, secondaryId) {
   await documentClient.delete({
     TableName,
     Key: {
-      id: applicationId,
-      secondaryId: constructUserSortKey(userId),
+      id,
+      secondaryId,
     },
   });
 }
@@ -237,9 +304,12 @@ module.exports = {
   create,
   createEmailSignInVerification,
   createEmailSignIn,
+  createResetToken,
   read,
   readEmailSignInVerification,
   readEmailSignIn,
-  update,
+  readResetToken,
+  updatePassword,
   remove,
+  removeEmailSignInVerification,
 };

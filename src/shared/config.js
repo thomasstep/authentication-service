@@ -1,7 +1,7 @@
-// const fs = require('fs');
+const fs = require('fs');
 
-// const contents = fs.readFileSync('/opt/config.json', 'utf8');
-// const config = JSON.parse(contents);
+const contents = fs.readFileSync('/opt/config.json', 'utf8');
+const config = JSON.parse(contents);
 
 const CONSTANTS = {
   // DynamoDB
@@ -19,6 +19,10 @@ const CONSTANTS = {
   DEFAULT_TOKEN_TTL: 2592000, // 30 days in seconds
   VERIFICATION_TTL: 900, // 30 days in seconds
   TTL_ATTRIBUTE_NAME: 'ttl',
+  // SES
+  DEFAULT_SES_REGION: 'us-east-1',
+  RESET_PASSWORD_EMAIL_TITLE: 'Reset Password',
+  VERIFY_EMAIL_TITLE: 'Verify Your Email Address',
   // Status codes
   GOOD_STATUS_CODE: 200,
   CREATED_STATUS_CODE: 201,
@@ -31,6 +35,8 @@ const CONSTANTS = {
   CONFLICT_STATUS_CODE: 409,
   SERVER_ERROR_STATUS_CODE: 500,
   // Misc
+  PRIVATE_KEY_NAME: 'authentication-service.key',
+  PUBLIC_KEY_NAME: 'authentication-service.key.pub',
   LOGGER_LEVEL: process.env.LOGGER_LEVEL || 'debug',
 };
 
@@ -39,6 +45,6 @@ const CONSTANTS = {
  */
 
 module.exports = {
-  // ...config,
+  ...config,
   ...CONSTANTS,
 };

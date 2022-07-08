@@ -11,3 +11,6 @@ cdk.out
 !src/**/*.js
 !asyncSrc/**/*.js
 !syntheticsSrc/**/*.js
+
+authentication-service.key
+authentication-service.key.pub

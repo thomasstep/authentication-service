@@ -1,6 +1,9 @@
-// const {
-//   smth,
-// } = require('/opt/ports');
+const { hash } = require('/opt/hashing');
+const {
+  createResetToken,
+  readApplication,
+  sendResetPasswordEmail,
+} = require('/opt/ports');
 
 /**
  *
@@ -9,14 +12,14 @@
  * @returns
  */
 async function logic(applicationId, email) {
-  const isEmail = await emailExists(applicationId, email);
-  if (!isEmail) {
-    return;
-  }
+  const emailHash = hash(email);
+  const resetToken = await createResetToken(applicationId, emailHash);
 
-  // Create item for reset password token
-  // Send email
-  // Be done
+  const applicationData = await readApplication(applicationId);
+  const {
+    resetPasswordUrl,
+  } = applicationData;
+  await sendResetPasswordEmail(email, resetToken, resetPasswordUrl);
 }
 
 module.exports = {
