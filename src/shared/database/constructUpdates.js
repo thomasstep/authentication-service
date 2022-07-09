@@ -22,7 +22,6 @@ function constructUpdates(body) {
     ExpressionAttributeValues: attrValues,
   };
 
-
   logger.info('[constructUpdates] Result', { updates: params });
   return params;
 }

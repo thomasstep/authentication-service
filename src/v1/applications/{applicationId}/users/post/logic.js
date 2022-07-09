@@ -1,9 +1,7 @@
 const { hash } = require('/opt/hashing');
 const {
-  createUser,
   createEmailSignInVerification,
-  readApplication,
-  sendVerificationEmail,
+  emitEmailVerificationEvent,
 } = require('/opt/ports');
 
 /**
@@ -13,18 +11,19 @@ const {
  * @returns {string}
  */
 async function logic(applicationId, email, password) {
-  const userId = await createUser(applicationId);
-
   const emailHash = hash(email);
   const passwordHash = hash(password);
-  const verificationToken = await createEmailSignInVerification(applicationId, userId, emailHash, passwordHash);
+  const verificationToken = await createEmailSignInVerification(
+    applicationId,
+    emailHash,
+    passwordHash,
+  );
 
-  const applicationData = await readApplication(applicationId);
-  const {
-    verificationUrl,
-  } = applicationData;
-  await sendVerificationEmail(email, verificationToken, verificationUrl);
-  return userId;
+  // TODO emit updateUserCount event if no verification needed
+  //  (user is immediately created)
+  //  this is for future-use whenever other sign in methods are allowed
+
+  await emitEmailVerificationEvent(applicationId, email);
 }
 
 module.exports = {

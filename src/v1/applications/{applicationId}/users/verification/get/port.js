@@ -1,8 +1,8 @@
 const { logic } = require('./logic');
 
 async function port(applicationId, token) {
-  const sites = await logic(applicationId, token);
-  return sites;
+  const userId = await logic(applicationId, token);
+  return userId;
 }
 
 module.exports = {

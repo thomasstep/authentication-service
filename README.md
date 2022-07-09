@@ -6,6 +6,9 @@
 # Install shared directory packages
 cd src/shared
 npm install
+# Install jose in the token/get endpoint handler
+cd src/v1/applications/\{applicationId\}/users/token/get
+npm install
 # Install project-level packages
 cd ../..
 npm install
@@ -68,13 +71,14 @@ All calls require an API key unless otherwise noted. The endpoints that are not 
   - Response: application ID
 - `GET /applications/{applicationId}`
   - Response: application info
-- `GET /applications/{applicationId}/jwks.json`
+- `GET /applications/{applicationId}/jwks.json` TODO
   - Response: S3 service proxy to `public/{applicationId}/jwks.json`
 - `PUT /applications/{applicationId}`
   - Can change data including state of application
   - Response: accepted
 - `DELETE /applications/{applicationId}`
   - Can only be deleted if the `userCount` is `0`
+  - Delete RSA key and JWKS
   - Response: no content
 - `POST /applications/{applicationId}/users`
   - Sign up a user
@@ -100,7 +104,7 @@ All calls require an API key unless otherwise noted. The endpoints that are not 
   - Check the current time is earlier than `ttl`
   - Delete unverified item
   - Response Payload: no content
-- `GET /applications/{applicationId}/users/otp`
+- `GET /applications/{applicationId}/users/otp` (future)
   - Sign in a user with passwordless login
   - Does not require an API key
   - Async
@@ -153,17 +157,17 @@ All calls require an API key unless otherwise noted. The endpoints that are not 
   - Check the current time is earlier than `ttl`
   - Delete reset password item
   - Response: no content
-- `GET /applications/{applicationId}/users/me`
+- `GET /applications/{applicationId}/users/me` TODO
   - Retrieve a user's metadata
   - Does not require an API key but does require a valid JWT from the authentication service itself
   - Response: user information using current JWT
-- `PUT /applications/{applicationId}/users/me`
+- `PUT /applications/{applicationId}/users/me` TODO
   - Update a user's account (by `id`)
   - Allow adding signin method (would require verification flow)
   - Allow changing password (not "forgot password" but a normal change)
   - Does not require an API key but does require a valid JWT from the authentication service itself
   - Response: user information using current JWT
-- `DELETE /applications/{applicationId}/users/me`
+- `DELETE /applications/{applicationId}/users/me` TODO
   - Does not require an API key but does require a valid JWT from the authentication service itself
   - Async
   - Reduces application's `userCount`
@@ -181,3 +185,9 @@ Configurage parts: `iss`, `aud` (will not be present if not configured)
   "iat": "<timestamp>"
 }
 ```
+
+### Events
+
+- `emailVerification` is emitted for the main purpose of sending an email asynchronously to verify that an entered email address is valid.
+- `updateUserCount` is emitted for the main purpose of incrementing the user count on an application.
+- `passwordReset` is emitted for the main purpose of sending an email asynchronously to start the password reset process by validing email ownership.

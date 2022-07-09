@@ -4,6 +4,7 @@ const {
 const { hash } = require('/opt/hashing');
 const {
   readResetToken,
+  updatePassword,
 } = require('/opt/ports');
 
 /**
@@ -29,7 +30,10 @@ async function logic(applicationId, token, password) {
   }
 
   const passwordHash = hash(password);
-  await updatePassword(emailHash, passwordHash);
+  await Promise.all([
+    updatePassword(applicationId, emailHash, passwordHash),
+    removeResetToken(applicationId, token),
+  ]);
 }
 
 module.exports = {

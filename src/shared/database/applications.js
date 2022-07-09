@@ -79,7 +79,6 @@ async function read(id) {
  * @returns
  */
 async function update(id, updates) {
-  // TODO make sure that port excludes created attr
   const updateParams = constructUpdates(updates);
   await documentClient.update({
     TableName,

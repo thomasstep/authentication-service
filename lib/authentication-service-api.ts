@@ -246,35 +246,73 @@ export class Api extends Stack {
       },
     );
 
-    let layers: lambda.ILayerVersion[] | undefined;
-    if (api.lambdaLayer) {
-      layers = [api.lambdaLayer];
-    }
+    /**************************************************************************
+     *
+     * Create async Lambdas and connect to SNS
+     *
+     *************************************************************************/
 
-    const dlq = new sqs.Queue(this, `post-stats-dlq`, {});
-    const passwordReset = new lambda.Function(
-      this,
-      `password-reset-lambda`,
+    const asyncLambdaNames = [
       {
-        runtime: lambda.Runtime.NODEJS_14_X,
-        code: lambda.Code.fromAsset(`asyncSrc/passwordReset`),
-        handler: 'index.handler',
-        logRetention: logs.RetentionDays.ONE_WEEK,
-        deadLetterQueue: dlq,
-        layers,
+        camelCase: 'emailVerification',
+        kebabCase: 'email-verification',
       },
-    );
-    primaryTable.grantFullAccess(passwordReset);
-    passwordReset.addEnvironment('PRIMARY_TABLE_NAME', primaryTable.tableName);
-    snsTopic.addSubscription(new snsSub.LambdaSubscription(
-      passwordReset,
       {
-        filterPolicy: {
-          operation: sns.SubscriptionFilter.stringFilter({
-            allowlist: ['passwordReset'],
-          }),
-        },
+        camelCase: 'updateUserCount',
+        kebabCase: 'update-user-count',
+      },
+      {
+        camelCase: 'passwordReset',
+        kebabCase: 'password-reset',
+      },
+    ];
+
+    asyncLambdaNames.forEach((name) => {
+      let layers: lambda.ILayerVersion[] | undefined;
+      if (api.lambdaLayer) {
+        layers = [api.lambdaLayer];
       }
-    ));
+
+      const dlq = new sqs.Queue(this, `${name.kebabCase}-dlq`, {});
+      const passwordReset = new lambda.Function(
+        this,
+        `${name.kebabCase}-lambda`,
+        {
+          runtime: lambda.Runtime.NODEJS_14_X,
+          code: lambda.Code.fromAsset(`asyncSrc/${name.camelCase}`),
+          handler: 'index.handler',
+          logRetention: logs.RetentionDays.ONE_WEEK,
+          deadLetterQueue: dlq,
+          layers,
+        },
+      );
+      primaryTable.grantFullAccess(passwordReset);
+      passwordReset.addEnvironment('PRIMARY_TABLE_NAME', primaryTable.tableName);
+      snsTopic.addSubscription(new snsSub.LambdaSubscription(
+        passwordReset,
+        {
+          filterPolicy: {
+            operation: sns.SubscriptionFilter.stringFilter({
+              allowlist: [name.camelCase],
+            }),
+          },
+        }
+      ));
+    });
+
+    /**************************************************************************
+     *
+     * Setup Lambdas that publish to SNS
+     *
+     *************************************************************************/
+
+    const lambdasThatPublish = [
+      '/v1/applications/{applicationId}/users/verification/get',
+    ];
+    lambdasThatPublish.forEach((lambdaName) => {
+      const lambda = api.lambdaFunctions[lambdaName];
+      snsTopic.grantPublish(lambda);
+      lambda.addEnvironment('PRIMARY_SNS_TOPIC', snsTopic.topicArn);
+    })
   }
 }

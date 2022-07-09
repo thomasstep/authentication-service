@@ -1,10 +1,6 @@
 const jose = require('jose');
-const config = require('/opt/config');
+// const config = require('/opt/config');
 const { logger } = require('/opt/logger');
-const {
-  createUser,
-  readUser,
-} = require('/opt/ports');
 
 // Helper function to generate an IAM policy
 function generatePolicy(principalId, apiStageArn, userId /* userData */) {
@@ -24,7 +20,7 @@ function generatePolicy(principalId, apiStageArn, userId /* userData */) {
 
   authResponse.policyDocument = policyDocument;
   authResponse.context = {
-    userId: userId,
+    userId,
   };
   // authResponse.context = userData;
 
@@ -40,11 +36,11 @@ async function handler(event) {
   const apiStageArn = `${apiGatewayArn}/${stage}`;
 
   try {
-    const jwksUrl = 'smthfromenv';
-    const jwtClaims = {};
+    // Get public key from S3
+    const jwksUrl = 'https://crowauth.thomasstep.com/v1/jwks.json';
     const JWKS = jose.createRemoteJWKSet(new URL(jwksUrl));
-    const { payload } = await jose.jwtVerify(token, JWKS, jwtClaims);
-    const userId = payload.sub;
+    const { payload } = await jose.jwtVerify(token, JWKS);
+    const { sub: userId } = payload;
 
     const policy = generatePolicy(userId, apiStageArn, userId);
     return policy;

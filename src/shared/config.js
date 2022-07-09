@@ -23,6 +23,9 @@ const CONSTANTS = {
   DEFAULT_SES_REGION: 'us-east-1',
   RESET_PASSWORD_EMAIL_TITLE: 'Reset Password',
   VERIFY_EMAIL_TITLE: 'Verify Your Email Address',
+  // SNS
+  DEFAULT_SNS_REGION: 'us-east-1',
+  PRIMARY_SNS_TOPIC: process.env.PRIMARY_SNS_TOPIC,
   // Status codes
   GOOD_STATUS_CODE: 200,
   CREATED_STATUS_CODE: 201,

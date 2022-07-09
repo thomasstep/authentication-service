@@ -1,4 +1,4 @@
-const { GOOD_NO_OUTPUT_STATUS_CODE } = require('/opt/config');
+const { CREATED_STATUS_CODE } = require('/opt/config');
 const {
   withErrorHandling,
 } = require('/opt/lambdaAdapterUtils');
@@ -10,9 +10,12 @@ async function handler(event) {
   const result = await withErrorHandling(async (event, auth) => {
     const applicationId = event.pathParameters.applicationId;
     const token = event.pathParameters.token;
-    await port(applicationId, token);
+    const userId = await port(applicationId, token);
     const data = {
-      statusCode: GOOD_NO_OUTPUT_STATUS_CODE,
+      statusCode: CREATED_STATUS_CODE,
+      body: JSON.stringify({
+        id: userId,
+      }),
     };
     return data;
   })(event);

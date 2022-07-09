@@ -1,7 +1,13 @@
 const {
-  MissingUniqueIdError,
+  MissingResourceError,
 } = require('/opt/errors');
-const { readUser } = require('/opt/ports');
+const {
+  createEmailSignIn,
+  createUser,
+  emitUserCreatedEvent,
+  readEmailSignInVerification,
+  removeEmailSignInVerification,
+} = require('/opt/ports');
 
 /**
  * Business logic
@@ -13,7 +19,6 @@ const { readUser } = require('/opt/ports');
 async function logic(applicationId, token) {
   const verificationData = await readEmailSignInVerification(applicationId, token);
   const {
-    userId,
     emailHash,
     passwordHash,
     ttl,
@@ -26,10 +31,13 @@ async function logic(applicationId, token) {
   if (currentTimestamp > ttl) {
     throw new MissingResourceError('Invalid token.');
   }
+  const userId = await createUser(applicationId);
   await Promise.all([
-    removeEmailSignIn(applicationId, token),
+    removeEmailSignInVerification(applicationId, token),
     createEmailSignIn(applicationId, userId, emailHash, passwordHash),
+    emitUserCreatedEvent(applicationId, userId),
   ]);
+  return userId;
 }
 
 module.exports = {

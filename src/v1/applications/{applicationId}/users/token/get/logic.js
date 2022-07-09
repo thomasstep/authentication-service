@@ -2,6 +2,8 @@ const crypto = require('crypto');
 const fs = require('fs');
 const path = require('path');
 
+const { SignJWT } = require('jose/jwt/sign');
+
 const {
   tokenExpirationTime,
   tokenIssuer,
@@ -26,14 +28,11 @@ const {
  */
 
 async function logic(applicationId, email, password) {
-  if (email && password) {
-    const emailHash = hash(email);
-    const emailData = readEmailSignIn(applicationId, emailHash);
-    // check hashes
-    const isValidPassword = compare(password, emailData.passwordHash);
-    if (!isValidPassword) {
-      throw new UnauthorizedError('Wrong password.');
-    }
+  const emailHash = hash(email);
+  const emailData = readEmailSignIn(applicationId, emailHash);
+  const isValidPassword = compare(password, emailData.passwordHash);
+  if (!isValidPassword) {
+    throw new UnauthorizedError('Wrong password.');
   }
 
   // TODO Should this live in S3?
@@ -48,7 +47,7 @@ async function logic(applicationId, email, password) {
     .setExpirationTime(tokenExpirationTime)
     .setIssuedAt()
     .sign(cryptoPrivateKey);
-  
+
   return token;
 }
 

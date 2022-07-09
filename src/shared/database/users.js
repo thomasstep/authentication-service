@@ -1,13 +1,13 @@
-const { documentClient } = require('/opt/databaseSession');
 const {
   PRIMARY_TABLE_NAME: TableName,
   USER_SORT_KEY,
   EMAIL_SIGN_IN_SORT_KEY,
   RESET_TOKEN_SORT_KEY,
-  REFRESH_TOKEN_SORT_KEY,
   UNVERIFIED_TOKEN_SORT_KEY,
   VERIFICATION_TTL,
 } = require('/opt/config');
+const { documentClient } = require('/opt/database/databaseSession');
+const { constructUpdates } = require('/opt/database/constructUpdates');
 const {
   generateToken,
   generateEasyToken,
@@ -20,7 +20,7 @@ const signInTypes = {
   EMAIL: EMAIL_SIGN_IN_SORT_KEY,
 };
 
-function now() {
+function getCurrentTimestamp() {
   const nowDate = new Date();
   const now = nowDate.toISOString();
   return now;
@@ -39,7 +39,7 @@ function constructUserSortKey(id) {
  * @returns {string} Formatted sort key
  */
 function constructEmailSignInVerificationSortKey(token) {
-  return `${UNVERIFIED_SORT_KEY}#${token}`;
+  return `${UNVERIFIED_TOKEN_SORT_KEY}#${token}`;
 }
 
 /**
@@ -47,17 +47,16 @@ function constructEmailSignInVerificationSortKey(token) {
  * @returns {string} Formatted sort key
  */
 function constructEmailSignInSortKey(emailHash) {
-  return `${EMAIL_SIGN_IN_SORT_KEY}#${emailHash}`;
+  return `${signInTypes.EMAIL}#${emailHash}`;
 }
 
 /**
  * @param {string} token
  * @returns {string} Formatted sort key
  */
- function constructResetPasswordSortKey(token) {
+function constructResetPasswordSortKey(token) {
   return `${RESET_TOKEN_SORT_KEY}#${token}`;
 }
-
 
 /**
  * @param {string} applicationId Application to which the user belongs
@@ -65,7 +64,7 @@ function constructEmailSignInSortKey(emailHash) {
  */
 async function create(applicationId) {
   const userId = generateToken();
-  const now = now();
+  const now = getCurrentTimestamp();
   await documentClient.put({
     TableName,
     Item: {
@@ -77,10 +76,6 @@ async function create(applicationId) {
     ConditionExpression: 'attribute_not_exists(id)',
   });
   return userId;
-}
-
-async function addSignInMethod(applicationId, id, method) {
-  // TODO add method to methodsUsed set
 }
 
 /**
@@ -115,7 +110,7 @@ async function createEmailSignInVerification(applicationId, id, emailHash, passw
  * @returns
  */
 async function createEmailSignIn(applicationId, id, emailHash, passwordHash) {
-  const now = now();
+  const now = getCurrentTimestamp();
   await documentClient.put({
     TableName,
     Item: {
@@ -150,6 +145,28 @@ async function createResetToken(applicationId, emailHash) {
     },
     ConditionExpression: 'attribute_not_exists(secondaryId)',
   });
+  return token;
+}
+
+/**
+ * @param {Object) itemPayload Object for DDB GET Item
+ * @returns {Object}
+ */
+async function readAttrs(itemPayload) {
+  const item = await documentClient.get({
+    TableName,
+    Item: itemPayload,
+  });
+  if (!item.Item) {
+    return {};
+  }
+
+  const {
+    id: throwAwayKey,
+    secondaryId: throwAwaySortKey,
+    ...attrs
+  } = item.Item;
+  return attrs;
 }
 
 /**
@@ -209,41 +226,6 @@ async function readResetToken(applicationId, token) {
 }
 
 /**
- * @param {Object) itemPayload Object for DDB GET Item
- * @returns {Object}
- */
-async function readAttrs(itemPayload) {
-  const item = await documentClient.get({
-    TableName,
-    Item: itemPayload,
-  });
-  if (!item.Item) {
-    return {};
-  }
-
-  const {
-    id: throwAwayKey,
-    secondaryId: throwAwaySortKey,
-    ...attrs
-  } = item.Item;
-  return attrs;
-}
-
-/**
- * @param {string) applicationId Application ID
- * @param {string) emailHash User's email hash
- * @param {string} passwordHash New user password hash
- */
-async function updatePassword(applicationId, emailHash, passwordHash) {
-  const now = now();
-  const updateParams = constructUpdates({
-    passwordHash,
-    lastPasswordChange: now,
-  })
-  await genericUpdate(applicationId, constructEmailSignInSortKey(emailHash), updateParams);
-}
-
-/**
  * This is expected to be used to create new sign in methods
  *
  * @param {string) applicationId Application ID
@@ -266,22 +248,17 @@ async function genericUpdate(id, secondaryId, updateParams) {
 }
 
 /**
- * To remove a user item
  * @param {string) applicationId Application ID
- * @param {string) id User's ID
- * @returns
+ * @param {string) emailHash User's email hash
+ * @param {string} passwordHash New user password hash
  */
-async function remove(applicationId, id) {
-  await genericRemove(applicationId, constructUserSortKey(id));
-}
-
-/**
- * @param {string) applicationId Application ID
- * @param {string) id User's ID
- * @returns
- */
-async function removeEmailSignInVerification(applicationId, token) {
-  await genericRemove(applicationId, constructEmailSignInVerificationSortKey(token));
+async function updatePassword(applicationId, emailHash, passwordHash) {
+  const now = getCurrentTimestamp();
+  const updateParams = constructUpdates({
+    passwordHash,
+    lastPasswordChange: now,
+  });
+  await genericUpdate(applicationId, constructEmailSignInSortKey(emailHash), updateParams);
 }
 
 /**
@@ -300,6 +277,34 @@ async function genericRemove(id, secondaryId) {
   });
 }
 
+/**
+ * To remove a user item
+ * @param {string) applicationId Application ID
+ * @param {string) id User's ID
+ * @returns
+ */
+async function remove(applicationId, id) {
+  await genericRemove(applicationId, constructUserSortKey(id));
+}
+
+/**
+ * @param {string) applicationId Application ID
+ * @param {string) token User's email verification token
+ * @returns
+ */
+async function removeEmailSignInVerification(applicationId, token) {
+  await genericRemove(applicationId, constructEmailSignInVerificationSortKey(token));
+}
+
+/**
+ * @param {string) applicationId Application ID
+ * @param {string) token User's reset password token
+ * @returns
+ */
+async function removeResetToken(applicationId, token) {
+  await genericRemove(applicationId, constructResetPasswordSortKey(token));
+}
+
 module.exports = {
   create,
   createEmailSignInVerification,
@@ -312,4 +317,5 @@ module.exports = {
   updatePassword,
   remove,
   removeEmailSignInVerification,
+  removeResetToken,
 };

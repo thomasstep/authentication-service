@@ -14,7 +14,7 @@ const { updateApplication } = require('/opt/ports');
  *                     created: timestamp
  *                   }
  */
-async function logic(auth) {
+async function logic(applicationId, body) {
   const newApplicationData = await updateApplication(applicationId, body);
   return newApplicationData;
 }

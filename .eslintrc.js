@@ -18,5 +18,6 @@ module.exports = {
     'import/no-unresolved': ['off'],
     'import/extensions': ['off'],
     'import/no-absolute-path': ['off'],
+    'prefer-destructuring': ['off'],
   },
 };
