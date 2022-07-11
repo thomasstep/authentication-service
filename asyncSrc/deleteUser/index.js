@@ -15,13 +15,11 @@ async function handler(event) {
       logger.debug(message);
       const {
         applicationId,
-        email,
-        verificationToken,
+        userId,
       } = message;
       recordPromises.push(port(
         applicationId,
-        email,
-        verificationToken,
+        userId,
       ));
     });
 

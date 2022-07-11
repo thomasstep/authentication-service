@@ -1,17 +1,23 @@
 const {
-  MissingUniqueIdError,
+  MissingUserIdError,
 } = require('/opt/errors');
-const { readUser } = require('/opt/ports');
 
 /**
  * Business logic
  * @param {Object} auth Holds relevant authentication info
- * @param {string} auth.uniqueId Unique ID of the client
+ * @param {string} auth.userId Unique ID of the client
  * @returns {string}
  */
 
 async function logic(auth) {
-  return 'smth';
+  const {
+    userId,
+  } = auth;
+  if (!userId) {
+    throw new MissingUserIdError('No user ID found');
+  }
+
+  return userId;
 }
 
 module.exports = {

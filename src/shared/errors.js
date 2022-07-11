@@ -31,11 +31,11 @@ class MissingResourceError extends Error {
   }
 }
 
-class MissingUniqueIdError extends Error {
+class MissingUserIdError extends Error {
   constructor(message) {
     super(message);
 
-    this.name = 'MissingUniqueIdError';
+    this.name = 'MissingUserIdError';
   }
 }
 
@@ -52,7 +52,7 @@ module.exports = {
   ExistingUsersError,
   InputError,
   MissingResourceError,
-  MissingUniqueIdError,
+  MissingUserIdError,
   UnauthorizedError,
 };
 /* eslint-enable max-classes-per-file */

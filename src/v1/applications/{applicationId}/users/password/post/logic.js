@@ -4,6 +4,7 @@ const {
 const { hash } = require('/opt/hashing');
 const {
   readResetToken,
+  removeResetToken,
   updatePassword,
 } = require('/opt/ports');
 

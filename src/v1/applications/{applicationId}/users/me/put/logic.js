@@ -1,7 +1,7 @@
 const {
-  MissingUniqueIdError,
+  MissingUserIdError,
 } = require('/opt/errors');
-const { readUser } = require('/opt/ports');
+const { updateUser } = require('/opt/ports');
 
 /**
  * Business logic
@@ -10,8 +10,15 @@ const { readUser } = require('/opt/ports');
  * @returns {string}
  */
 
-async function logic(auth) {
-  return 'smth';
+async function logic(auth, applicationId, body) {
+  const {
+    userId,
+  } = auth;
+  if (!userId) {
+    throw new MissingUserIdError('No user ID found');
+  }
+  const newUserData = await updateUser(applicationId, userId, body);
+  return newUserData;
 }
 
 module.exports = {

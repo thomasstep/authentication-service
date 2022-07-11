@@ -1,5 +1,5 @@
-const { applications } = require('/opt/database/applications');
-const { users, signInTypes } = require('/opt/database/users');
+const applications = require('/opt/database/applications');
+const users = require('/opt/database/users');
 const {
   ExistingUsersError,
   MissingResourceError,
@@ -37,7 +37,7 @@ async function createEmailSignInVerification(applicationId, id, emailHash, passw
 async function createEmailSignIn(applicationId, userId, emailHash, passwordHash) {
   await Promise.all([
     users.createEmailSignIn(applicationId, userId, emailHash, passwordHash),
-    users.addSignInMethod(applicationId, userId, signInTypes.EMAIL),
+    users.addSignInMethod(applicationId, userId, users.signInTypes.EMAIL),
   ]);
 }
 
@@ -54,8 +54,12 @@ async function createResetToken(applicationId, emailHash) {
   return resetToken;
 }
 
-async function emitEmailVerificationEvent(applicationId, email) {
-  await emitEmailVerification(applicationId, email);
+async function emitEmailVerificationEvent(applicationId, email, verificationToken) {
+  await emitEmailVerification(applicationId, email, verificationToken);
+}
+
+async function emitUpdateUserCountEvent(applicationId, userCountChange) {
+  await emitUpdateUserCount(applicationId, userCountChange);
 }
 
 // eslint-disable-next-line no-unused-vars
@@ -96,12 +100,17 @@ async function updateApplication(id, updates) {
   return newApplicationData;
 }
 
+async function updateUser(applicationId, id, updates) {
+  const newUserData = await users.update(applicationId, id, updates);
+  return newUserData;
+}
+
 async function updatePassword(applicationId, emailHash, passwordHash) {
   await updatePassword(applicationId, emailHash, passwordHash);
 }
 
 async function updateUserCount(applicationId, userCountChange) {
-  await applications.update(applicationId, { userCount: userCountChange })
+  await applications.update(applicationId, { userCount: userCountChange });
 }
 
 async function removeApplication(id) {
@@ -126,14 +135,16 @@ module.exports = {
   createEmailSignInVerification,
   createEmailSignIn,
   createResetToken,
-  emitUserCreatedEvent,
   emitEmailVerificationEvent,
+  emitUpdateUserCountEvent,
+  emitUserCreatedEvent,
   readApplication,
   readUser,
   readEmailSignInVerification,
   readEmailSignIn,
   readResetToken,
   updateApplication,
+  updateUser,
   updatePassword,
   updateUserCount,
   removeApplication,

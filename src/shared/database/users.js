@@ -248,6 +248,18 @@ async function genericUpdate(id, secondaryId, updateParams) {
 }
 
 /**
+ *
+ * @param {string} applicationId Application to which the user belongs
+ * @param {string} id User's ID
+ * @param {Object} updates Object with KV pairs of attributes to update
+ * @returns
+ */
+async function update(applicationId, id, updates) {
+  const updateParams = constructUpdates(updates);
+  await genericUpdate(applicationId, constructUserSortKey(id), updateParams);
+}
+
+/**
  * @param {string) applicationId Application ID
  * @param {string) emailHash User's email hash
  * @param {string} passwordHash New user password hash
@@ -306,6 +318,7 @@ async function removeResetToken(applicationId, token) {
 }
 
 module.exports = {
+  signInTypes,
   create,
   createEmailSignInVerification,
   createEmailSignIn,
@@ -314,6 +327,7 @@ module.exports = {
   readEmailSignInVerification,
   readEmailSignIn,
   readResetToken,
+  update,
   updatePassword,
   remove,
   removeEmailSignInVerification,

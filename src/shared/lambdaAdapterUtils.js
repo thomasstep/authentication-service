@@ -1,5 +1,6 @@
-const AWSXRay = require('aws-xray-sdk-core');
-AWSXRay.captureAWS(require('aws-sdk'));
+// TODO get xray working
+// const AWSXRay = require('aws-xray-sdk-core');
+// AWSXRay.captureAWS(require('aws-sdk'));
 const {
   constructAuth,
 } = require('/opt/authUtils');
@@ -15,7 +16,7 @@ const {
   ExistingUsersError,
   InputError,
   MissingResourceError,
-  MissingUniqueIdError,
+  MissingUserIdError,
   UnauthorizedError,
 } = require('/opt/errors');
 const { logger } = require('/opt/logger');
@@ -55,7 +56,7 @@ function withErrorHandling(func) {
         message = err.message;
       }
 
-      if (err instanceof MissingUniqueIdError) {
+      if (err instanceof MissingUserIdError) {
         statusCode = UNAUTHENTICATED_STATUS_CODE;
         message = err.message;
       }

@@ -1,10 +1,10 @@
-const { documentClient } = require('/opt/database/databaseSession');
 const {
   PRIMARY_TABLE_NAME: TableName,
   APPLICATION_SORT_KEY: secondaryId,
 } = require('/opt/config');
+const { documentClient } = require('/opt/database/databaseSession');
+const { constructUpdates } = require('/opt/database/constructUpdates');
 const { generateToken } = require('/opt/generateToken');
-const { constructUpdates } = require('/opt/constructUpdates');
 
 /**
  * @enum {ApplicationStateTypes}

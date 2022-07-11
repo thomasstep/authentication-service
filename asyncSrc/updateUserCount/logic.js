@@ -1,4 +1,3 @@
-const { hash } = require('/opt/hashing');
 const {
   updateUserCount,
 } = require('/opt/ports');

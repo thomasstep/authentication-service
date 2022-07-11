@@ -115,7 +115,7 @@ export class Api extends Stack {
         '/v1/applications/{applicationId}/users/password/post',
         '/v1/applications/{applicationId}/users/me/get',
         '/v1/applications/{applicationId}/users/me/put',
-        '/v1/applications/{applicationId}/users/me/delete',
+        // '/v1/applications/{applicationId}/users/me/delete',
       ],
       'PRIMARY_TABLE_NAME',
     );
@@ -156,6 +156,11 @@ export class Api extends Stack {
     const usersResource = applicationIdResource.getResource('users');
     if (!usersResource) {
       throw new Error('users resource cannot be found');
+    }
+
+    const meResource = usersResource.getResource('me');
+    if (!meResource) {
+      throw new Error('me resource cannot be found');
     }
 
     const passwordResource = usersResource.getResource('password');
@@ -248,6 +253,57 @@ export class Api extends Stack {
 
     /**************************************************************************
      *
+     * DELETE user
+     *
+     *************************************************************************/
+
+
+     let deleteUserMessage = `$util.urlEncode('{"applicationId":"')$util.escapeJavaScript($input.params('applicationId'))`;
+     deleteUserMessage += `$util.urlEncode('","userId":')$context.authorizer.userId`;
+     deleteUserMessage += `$util.urlEncode('}')`;
+     meResource.addMethod(
+       'DELETE',
+       new apigateway.AwsIntegration({
+         service: 'sns',
+         path: '/',
+         integrationHttpMethod: 'POST',
+         options: {
+           credentialsRole: apiGatewayRole,
+           passthroughBehavior: apigateway.PassthroughBehavior.NEVER,
+           requestParameters: {
+             'integration.request.header.Content-Type': "'application/x-www-form-urlencoded'",
+           },
+           requestTemplates: {
+             'application/json': `Action=Publish&TopicArn=$util.urlEncode(\'${snsTopic.topicArn}\')\
+ &Message=${deleteUserMessage}\
+ &MessageAttributes.entry.1.Name=operation\
+ &MessageAttributes.entry.1.Value.DataType=String\
+ &MessageAttributes.entry.1.Value.StringValue=deleteUser`,
+           },
+           integrationResponses: [
+             {
+               statusCode: "202",
+               responseTemplates: {
+                 'application/json': '{}',
+               },
+             },
+             {
+               statusCode: "500",
+               // Anything but a 2XX response
+               selectionPattern: "(1|3|4|5)\\d{2}",
+               responseTemplates: {
+                 'application/json': '{}',
+               },
+             },
+           ],
+         },
+       }),
+       {
+         ...defaultMethodOptions,
+       },
+     );
+    /**************************************************************************
+     *
      * Create async Lambdas and connect to SNS
      *
      *************************************************************************/
@@ -265,6 +321,10 @@ export class Api extends Stack {
         camelCase: 'passwordReset',
         kebabCase: 'password-reset',
       },
+      {
+        camelCase: 'deleteUser',
+        kebabCase: 'delete-user',
+      },
     ];
 
     asyncLambdaNames.forEach((name) => {
@@ -274,7 +334,7 @@ export class Api extends Stack {
       }
 
       const dlq = new sqs.Queue(this, `${name.kebabCase}-dlq`, {});
-      const passwordReset = new lambda.Function(
+      const lambdaFunction = new lambda.Function(
         this,
         `${name.kebabCase}-lambda`,
         {
@@ -286,10 +346,10 @@ export class Api extends Stack {
           layers,
         },
       );
-      primaryTable.grantFullAccess(passwordReset);
-      passwordReset.addEnvironment('PRIMARY_TABLE_NAME', primaryTable.tableName);
+      primaryTable.grantFullAccess(lambdaFunction);
+      lambdaFunction.addEnvironment('PRIMARY_TABLE_NAME', primaryTable.tableName);
       snsTopic.addSubscription(new snsSub.LambdaSubscription(
-        passwordReset,
+        lambdaFunction,
         {
           filterPolicy: {
             operation: sns.SubscriptionFilter.stringFilter({

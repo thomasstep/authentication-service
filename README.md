@@ -104,7 +104,7 @@ All calls require an API key unless otherwise noted. The endpoints that are not 
   - Check the current time is earlier than `ttl`
   - Delete unverified item
   - Response Payload: no content
-- `GET /applications/{applicationId}/users/otp` (future)
+- `GET /applications/{applicationId}/users/otp` future TODO
   - Sign in a user with passwordless login
   - Does not require an API key
   - Async
@@ -157,17 +157,17 @@ All calls require an API key unless otherwise noted. The endpoints that are not 
   - Check the current time is earlier than `ttl`
   - Delete reset password item
   - Response: no content
-- `GET /applications/{applicationId}/users/me` TODO
-  - Retrieve a user's metadata
+- `GET /applications/{applicationId}/users/me`
+  - Echos back user's ID?
   - Does not require an API key but does require a valid JWT from the authentication service itself
-  - Response: user information using current JWT
-- `PUT /applications/{applicationId}/users/me` TODO
+  - Response: user ID using current JWT
+- `PUT /applications/{applicationId}/users/me` future TODO
   - Update a user's account (by `id`)
   - Allow adding signin method (would require verification flow)
   - Allow changing password (not "forgot password" but a normal change)
   - Does not require an API key but does require a valid JWT from the authentication service itself
   - Response: user information using current JWT
-- `DELETE /applications/{applicationId}/users/me` TODO
+- `DELETE /applications/{applicationId}/users/me`
   - Does not require an API key but does require a valid JWT from the authentication service itself
   - Async
   - Reduces application's `userCount`

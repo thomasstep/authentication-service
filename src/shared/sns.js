@@ -16,7 +16,7 @@ async function publish(params) {
   const parameters = {
     TopicArn: PRIMARY_SNS_TOPIC,
     ...params,
-  }
+  };
 
   const publishCommand = new PublishCommand(parameters);
   const data = await client.send(publishCommand);
@@ -24,10 +24,10 @@ async function publish(params) {
   return data;
 }
 
-async function emitEmailVerification(applicationId, email) {
+async function emitEmailVerification(applicationId, email, verificationToken) {
   const params = {
     MessageAttributes: {
-      'operation': {
+      operation: {
         DataType: 'String',
         StringValue: 'emailVerification',
       },
@@ -35,6 +35,7 @@ async function emitEmailVerification(applicationId, email) {
     Message: JSON.stringify({
       applicationId,
       email,
+      verificationToken,
     }),
   };
 
@@ -46,7 +47,7 @@ async function emitEmailVerification(applicationId, email) {
 async function emitUpdateUserCount(applicationId, userCountChange) {
   const params = {
     MessageAttributes: {
-      'operation': {
+      operation: {
         DataType: 'String',
         StringValue: 'updateUserCount',
       },

@@ -8,6 +8,7 @@ const { port } = require('./port');
 async function handler(event) {
   // eslint-disable-next-line no-shadow, no-unused-vars
   const result = await withErrorHandling(async (event, auth) => {
+    // TODO accept both application/json and application/x-www-form-urlencoded
     const body = JSON.parse(event.body);
     const {
       email,
