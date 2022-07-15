@@ -8,6 +8,7 @@ const CONSTANTS = {
   DEFAULT_DYNAMODB_REGION: 'us-east-1',
   PRIMARY_TABLE_NAME: process.env.PRIMARY_TABLE_NAME,
   USER_SORT_KEY: 'user',
+  USER_SIGN_IN_METHOD_ATTRIBUTE_NAME: 'methodsUsed',
   APPLICATION_SORT_KEY: 'application',
   EMAIL_SIGN_IN_SORT_KEY: 'email',
   PHONE_SIGN_IN_SORT_KEY: 'phone',

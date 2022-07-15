@@ -23,26 +23,25 @@ async function createUser(applicationId) {
   return id;
 }
 
-async function createEmailSignInVerification(applicationId, id, emailHash, passwordHash) {
-  const userData = await users.readEmailSignIn(applicationId, emailHash);
+async function createEmailSignInVerification(applicationId, email, passwordHash) {
+  const userData = await users.readEmailSignIn(applicationId, email);
   if (userData.id) {
     // TODO see if I can just catch an error from DDB b/c I have a condition on the put
     throw new ExistingUsersError('This email address is already in use.');
   }
 
-  await users.createEmailSignInVerification(applicationId, id, emailHash, passwordHash);
-  return id;
+  await users.createEmailSignInVerification(applicationId, email, passwordHash);
 }
 
-async function createEmailSignIn(applicationId, userId, emailHash, passwordHash) {
+async function createEmailSignIn(applicationId, userId, email, passwordHash) {
   await Promise.all([
-    users.createEmailSignIn(applicationId, userId, emailHash, passwordHash),
+    users.createEmailSignIn(applicationId, userId, email, passwordHash),
     users.addSignInMethod(applicationId, userId, users.signInTypes.EMAIL),
   ]);
 }
 
-async function createResetToken(applicationId, emailHash) {
-  const userData = await users.readEmailSignIn(applicationId, emailHash);
+async function createResetToken(applicationId, email) {
+  const userData = await users.readEmailSignIn(applicationId, email);
   const {
     userId,
   } = userData;
@@ -50,7 +49,7 @@ async function createResetToken(applicationId, emailHash) {
     throw new MissingResourceError('Email not found.');
   }
 
-  const resetToken = await users.createEmailSignInVerification(applicationId, emailHash);
+  const resetToken = await users.createEmailSignInVerification(applicationId, email);
   return resetToken;
 }
 
@@ -85,8 +84,8 @@ async function readEmailSignInVerification(applicationId, token) {
   return verificationData;
 }
 
-async function readEmailSignIn(applicationId, emailHash) {
-  const emailData = await users.readEmailSignIn(applicationId, emailHash);
+async function readEmailSignIn(applicationId, email) {
+  const emailData = await users.readEmailSignIn(applicationId, email);
   return emailData;
 }
 
@@ -105,8 +104,8 @@ async function updateUser(applicationId, id, updates) {
   return newUserData;
 }
 
-async function updatePassword(applicationId, emailHash, passwordHash) {
-  await updatePassword(applicationId, emailHash, passwordHash);
+async function updatePassword(applicationId, email, passwordHash) {
+  await updatePassword(applicationId, email, passwordHash);
 }
 
 async function updateUserCount(applicationId, userCountChange) {

@@ -12,8 +12,7 @@ const {
  * @returns
  */
 async function logic(applicationId, email) {
-  const emailHash = hash(email);
-  const resetToken = await createResetToken(applicationId, emailHash);
+  const resetToken = await createResetToken(applicationId, email);
 
   const applicationData = await readApplication(applicationId);
   const {

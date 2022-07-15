@@ -19,11 +19,11 @@ const {
 async function logic(applicationId, token) {
   const verificationData = await readEmailSignInVerification(applicationId, token);
   const {
-    emailHash,
+    email,
     passwordHash,
     ttl,
   } = verificationData;
-  if (!emailHash) {
+  if (!email) {
     throw new MissingResourceError('Invalid token.');
   }
 
@@ -34,7 +34,7 @@ async function logic(applicationId, token) {
   const userId = await createUser(applicationId);
   await Promise.all([
     removeEmailSignInVerification(applicationId, token),
-    createEmailSignIn(applicationId, userId, emailHash, passwordHash),
+    createEmailSignIn(applicationId, userId, email, passwordHash),
     emitUserCreatedEvent(applicationId, userId),
   ]);
   return userId;

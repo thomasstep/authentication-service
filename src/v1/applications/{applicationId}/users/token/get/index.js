@@ -9,10 +9,10 @@ async function handler(event) {
   // eslint-disable-next-line no-shadow, no-unused-vars
   const result = await withErrorHandling(async (event, auth) => {
     const applicationId = event.pathParameters.applicationId;
-    const email = event.pathParameters.email;
-    const password = event.pathParameters.password;
+    const email = event.queryStringParameters.email;
+    const password = event.queryStringParameters.password;
     // Not doing refresh token now because giving one to a SPA is unsecure
-    // const refreshToken = event.pathParameters.refreshToken;
+    // const refreshToken = event.queryStringParameters.refreshToken;
     const token = await port(applicationId, email, password);
     const data = {
       statusCode: GOOD_STATUS_CODE,

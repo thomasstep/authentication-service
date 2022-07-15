@@ -11,11 +11,10 @@ const {
  * @returns {string}
  */
 async function logic(applicationId, email, password) {
-  const emailHash = hash(email);
   const passwordHash = hash(password);
   const verificationToken = await createEmailSignInVerification(
     applicationId,
-    emailHash,
+    email,
     passwordHash,
   );
 

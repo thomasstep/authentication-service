@@ -1,6 +1,7 @@
 const {
   PRIMARY_TABLE_NAME: TableName,
   USER_SORT_KEY,
+  USER_SIGN_IN_METHOD_ATTRIBUTE_NAME,
   EMAIL_SIGN_IN_SORT_KEY,
   RESET_TOKEN_SORT_KEY,
   UNVERIFIED_TOKEN_SORT_KEY,
@@ -12,6 +13,7 @@ const {
   generateToken,
   generateEasyToken,
 } = require('/opt/generateToken');
+const { logger } = require('/opt/logger');
 
 /**
  * @enum {SignInTypes}
@@ -43,11 +45,11 @@ function constructEmailSignInVerificationSortKey(token) {
 }
 
 /**
- * @param {string} emailHash
+ * @param {string} email
  * @returns {string} Formatted sort key
  */
-function constructEmailSignInSortKey(emailHash) {
-  return `${signInTypes.EMAIL}#${emailHash}`;
+function constructEmailSignInSortKey(email) {
+  return `${signInTypes.EMAIL}#${email}`;
 }
 
 /**
@@ -73,19 +75,19 @@ async function create(applicationId) {
       lastSignin: now,
       created: now,
     },
-    ConditionExpression: 'attribute_not_exists(id)',
+    ConditionExpression: 'attribute_not_exists(secondaryId)',
   });
   return userId;
 }
 
 /**
- * @param {string) applicationId Application ID
- * @param {string) id User's ID
- * @param {string} emailHash User's email hashed
+ * @param {string} applicationId Application ID
+ * @param {string} id User's ID
+ * @param {string} email User's email hashed
  * @param {string} passwordHash User's password hashed
  * @returns
  */
-async function createEmailSignInVerification(applicationId, id, emailHash, passwordHash) {
+async function createEmailSignInVerification(applicationId, email, passwordHash) {
   const ttl = Math.floor(Date.now() / 1000) + VERIFICATION_TTL;
   const token = generateEasyToken();
   await documentClient.put({
@@ -93,29 +95,29 @@ async function createEmailSignInVerification(applicationId, id, emailHash, passw
     Item: {
       id: applicationId,
       secondaryId: constructEmailSignInVerificationSortKey(token),
-      userId: id,
-      emailHash,
+      email,
       passwordHash,
       ttl,
     },
+    ConditionExpression: 'attribute_not_exists(secondaryId)',
   });
   return token;
 }
 
 /**
- * @param {string) applicationId Application ID
- * @param {string) id User's ID
- * @param {string} emailHash User's email hashed
+ * @param {string} applicationId Application ID
+ * @param {string} id User's ID
+ * @param {string} email User's email hashed
  * @param {string} passwordHash User's password hashed
  * @returns
  */
-async function createEmailSignIn(applicationId, id, emailHash, passwordHash) {
+async function createEmailSignIn(applicationId, id, email, passwordHash) {
   const now = getCurrentTimestamp();
   await documentClient.put({
     TableName,
     Item: {
       id: applicationId,
-      secondaryId: constructEmailSignInSortKey(emailHash),
+      secondaryId: constructEmailSignInSortKey(email),
       userId: id,
       passwordHash,
       lastPasswordChange: now,
@@ -126,13 +128,13 @@ async function createEmailSignIn(applicationId, id, emailHash, passwordHash) {
 }
 
 /**
- * @param {string) applicationId Application ID
- * @param {string) id User's ID
- * @param {string} emailHash User's email hashed
+ * @param {string} applicationId Application ID
+ * @param {string} id User's ID
+ * @param {string} email User's email hashed
  * @param {string} passwordHash User's password hashed
  * @returns
  */
-async function createResetToken(applicationId, emailHash) {
+async function createResetToken(applicationId, email) {
   const ttl = Math.floor(Date.now() / 1000) + VERIFICATION_TTL;
   const token = generateEasyToken();
   await documentClient.put({
@@ -140,7 +142,7 @@ async function createResetToken(applicationId, emailHash) {
     Item: {
       id: applicationId,
       secondaryId: constructResetPasswordSortKey(token),
-      emailHash,
+      email,
       ttl,
     },
     ConditionExpression: 'attribute_not_exists(secondaryId)',
@@ -149,14 +151,16 @@ async function createResetToken(applicationId, emailHash) {
 }
 
 /**
- * @param {Object) itemPayload Object for DDB GET Item
+ * @param {Object} itemPayload Object for DDB GET Item
  * @returns {Object}
  */
 async function readAttrs(itemPayload) {
+  logger.info(itemPayload)
   const item = await documentClient.get({
     TableName,
-    Item: itemPayload,
+    Key: itemPayload,
   });
+  logger.info(item)
   if (!item.Item) {
     return {};
   }
@@ -171,8 +175,8 @@ async function readAttrs(itemPayload) {
 
 /**
  *
- * @param {string) applicationId Application ID
- * @param {string) id User's ID
+ * @param {string} applicationId Application ID
+ * @param {string} id User's ID
  * @returns {Object} userData
  *                   {
  *                     id: string,
@@ -190,7 +194,7 @@ async function read(applicationId, id) {
 }
 
 /**
- * @param {string) applicationId Application ID
+ * @param {string} applicationId Application ID
  * @param {string} token Verification token
  * @returns
  */
@@ -202,19 +206,19 @@ async function readEmailSignInVerification(applicationId, token) {
 }
 
 /**
- * @param {string) applicationId Application ID
- * @param {string} emailHash User's email hashed
+ * @param {string} applicationId Application ID
+ * @param {string} email User's email hashed
  * @returns
  */
-async function readEmailSignIn(applicationId, emailHash) {
+async function readEmailSignIn(applicationId, email) {
   return readAttrs({
     id: applicationId,
-    secondaryId: constructEmailSignInSortKey(emailHash),
+    secondaryId: constructEmailSignInSortKey(email),
   });
 }
 
 /**
- * @param {string) applicationId Application ID
+ * @param {string} applicationId Application ID
  * @param {string} token Reset password token
  * @returns
  */
@@ -228,8 +232,8 @@ async function readResetToken(applicationId, token) {
 /**
  * This is expected to be used to create new sign in methods
  *
- * @param {string) applicationId Application ID
- * @param {string) id User's ID
+ * @param {string} applicationId Application ID
+ * @param {string} id User's ID
  * @param {Object} updateParams Payload for updates
  * @param {Object} updateParams.UpdateExpression
  * @param {Object} updateParams.ExpressionAttributeNames
@@ -260,23 +264,42 @@ async function update(applicationId, id, updates) {
 }
 
 /**
- * @param {string) applicationId Application ID
- * @param {string) emailHash User's email hash
+ * @param {string} applicationId Application ID
+ * @param {string} email User's email hash
  * @param {string} passwordHash New user password hash
  */
-async function updatePassword(applicationId, emailHash, passwordHash) {
+async function updatePassword(applicationId, email, passwordHash) {
   const now = getCurrentTimestamp();
   const updateParams = constructUpdates({
     passwordHash,
     lastPasswordChange: now,
   });
-  await genericUpdate(applicationId, constructEmailSignInSortKey(emailHash), updateParams);
+  await genericUpdate(applicationId, constructEmailSignInSortKey(email), updateParams);
+}
+
+/**
+ * @param {string} applicationId Application ID
+ * @param {string} id User's ID
+ * @param {string} signInType Sign in type to add to user
+ * @returns
+ */
+async function addSignInMethod(applicationId, id, signInType) {
+  const updateParams = {
+    UpdateExpression: `ADD #signInMethodKey :signInMethod`,
+    ExpressionAttributeNames: {
+      '#signInMethodKey': USER_SIGN_IN_METHOD_ATTRIBUTE_NAME,
+    },
+    ExpressionAttributeValues: {
+      ':signInMethod': new Set([signInType]),
+    },
+  };
+  await genericUpdate(applicationId, constructUserSortKey(id), updateParams);
 }
 
 /**
  *
- * @param {string) applicationId Application ID
- * @param {string) id User's ID
+ * @param {string} applicationId Application ID
+ * @param {string} id User's ID
  * @returns
  */
 async function genericRemove(id, secondaryId) {
@@ -291,8 +314,8 @@ async function genericRemove(id, secondaryId) {
 
 /**
  * To remove a user item
- * @param {string) applicationId Application ID
- * @param {string) id User's ID
+ * @param {string} applicationId Application ID
+ * @param {string} id User's ID
  * @returns
  */
 async function remove(applicationId, id) {
@@ -300,8 +323,8 @@ async function remove(applicationId, id) {
 }
 
 /**
- * @param {string) applicationId Application ID
- * @param {string) token User's email verification token
+ * @param {string} applicationId Application ID
+ * @param {string} token User's email verification token
  * @returns
  */
 async function removeEmailSignInVerification(applicationId, token) {
@@ -309,8 +332,8 @@ async function removeEmailSignInVerification(applicationId, token) {
 }
 
 /**
- * @param {string) applicationId Application ID
- * @param {string) token User's reset password token
+ * @param {string} applicationId Application ID
+ * @param {string} token User's reset password token
  * @returns
  */
 async function removeResetToken(applicationId, token) {
@@ -329,6 +352,7 @@ module.exports = {
   readResetToken,
   update,
   updatePassword,
+  addSignInMethod,
   remove,
   removeEmailSignInVerification,
   removeResetToken,

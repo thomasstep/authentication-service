@@ -18,10 +18,10 @@ const {
 async function logic(applicationId, token, password) {
   const resetTokenData = await readResetToken(applicationId, token);
   const {
-    emailHash,
+    email,
     ttl,
   } = resetTokenData;
-  if (!emailHash) {
+  if (!email) {
     throw new MissingResourceError('Invalid token.');
   }
 
@@ -32,7 +32,7 @@ async function logic(applicationId, token, password) {
 
   const passwordHash = hash(password);
   await Promise.all([
-    updatePassword(applicationId, emailHash, passwordHash),
+    updatePassword(applicationId, email, passwordHash),
     removeResetToken(applicationId, token),
   ]);
 }

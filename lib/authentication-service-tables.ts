@@ -19,7 +19,7 @@ export class Tables extends Stack {
         type: dynamodb.AttributeType.STRING,
       },
       sortKey: {
-        name: 'secondaryKey',
+        name: 'secondaryId',
         type: dynamodb.AttributeType.STRING,
       },
       timeToLiveAttribute: 'ttl',

@@ -2,13 +2,13 @@ const crypto = require('crypto');
 const fs = require('fs');
 const path = require('path');
 
-const { SignJWT } = require('jose/jwt/sign');
+const jose = require('jose');
 
 const {
   tokenExpirationTime,
   tokenIssuer,
   PRIVATE_KEY_NAME,
-} = require('/opt/constants');
+} = require('/opt/config');
 const {
   UnauthorizedError,
 } = require('/opt/errors');
@@ -19,6 +19,7 @@ const {
 const {
   readEmailSignIn,
 } = require('/opt/ports');
+const { logger } = require('/opt/logger');
 
 /**
  * Business logic
@@ -28,8 +29,8 @@ const {
  */
 
 async function logic(applicationId, email, password) {
-  const emailHash = hash(email);
-  const emailData = readEmailSignIn(applicationId, emailHash);
+  const emailData = await readEmailSignIn(applicationId, email);
+  logger.info(emailData);
   const isValidPassword = compare(password, emailData.passwordHash);
   if (!isValidPassword) {
     throw new UnauthorizedError('Wrong password.');
@@ -39,7 +40,7 @@ async function logic(applicationId, email, password) {
   const privateKeyPath = path.resolve(__dirname, PRIVATE_KEY_NAME);
   const privateKey = fs.readFileSync(privateKeyPath, 'utf8');
   const cryptoPrivateKey = crypto.createPrivateKey(privateKey);
-  const token = await new SignJWT()
+  const token = await new jose.SignJWT({})
     .setProtectedHeader({ alg: 'RS256' })
     .setIssuer(tokenIssuer)
     .setSubject(emailData.userId)

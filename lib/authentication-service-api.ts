@@ -324,6 +324,7 @@ export class Api extends Stack {
       {
         camelCase: 'deleteUser',
         kebabCase: 'delete-user',
+        usesSns: true,
       },
     ];
 
@@ -358,6 +359,10 @@ export class Api extends Stack {
           },
         }
       ));
+      if (name.usesSns) {
+        snsTopic.grantPublish(lambdaFunction);
+        lambdaFunction.addEnvironment('PRIMARY_SNS_TOPIC', snsTopic.topicArn);
+      }
     });
 
     /**************************************************************************
@@ -367,6 +372,7 @@ export class Api extends Stack {
      *************************************************************************/
 
     const lambdasThatPublish = [
+      '/v1/applications/{applicationId}/users/post',
       '/v1/applications/{applicationId}/users/verification/get',
     ];
     lambdasThatPublish.forEach((lambdaName) => {

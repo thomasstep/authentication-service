@@ -41,7 +41,7 @@ This will be a mash of the current data model with small adjustments for the new
 | ------------------- | ---------------------- | -------------- |
 | `<app-id>`          | `application`          | `{ applicationState: enum{active, suspended}, emailFromName: string, resetPasswordUrl: string, verificationUrl: string, userCount: number, created: timestamp }` |
 | `<app-id>`          | `user#<id>`            | `{ methodsUsed: []signinMethods{email, phone, google, etc.}, lastSignin: timestamp, created: timestamp }` |
-| `<app-id>`          | `unverified#<token>`   | `{ userId: string, emailHash: string, passwordHash: string, ttl: timestamp }` |
+| `<app-id>`          | `unverified#<token>`   | `{ emailHash: string, passwordHash: string, ttl: timestamp }` |
 | `<app-id>`          | `email#<emailHash>`    | `{ userId: string, passwordHash: string, lastPasswordChange: timestamp, created: timestamp }` |
 | `<app-id>`          | `reset#<token>`        | `{ emailHash: string, ttl: timestamp }` |
 | `<app-id>`          | `phone#<hashedNumber>` | `{ userId: string, created: timestamp }` |
