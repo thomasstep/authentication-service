@@ -1,6 +1,7 @@
 const {
   PRIMARY_TABLE_NAME: TableName,
   APPLICATION_SORT_KEY: secondaryId,
+  USER_COUNT_ATTRIBUTE_NAME,
 } = require('/opt/config');
 const { documentClient } = require('/opt/database/databaseSession');
 const { constructUpdates } = require('/opt/database/constructUpdates');
@@ -73,13 +74,17 @@ async function read(id) {
 }
 
 /**
+ * This is expected to be used to create new sign in methods
  *
- * @param {string} id Calendar ID
- * @param {Object} updates Object with KV pairs of attributes to update
+ * @param {string} applicationId Application ID
+ * @param {string} id User's ID
+ * @param {Object} updateParams Payload for updates
+ * @param {Object} updateParams.UpdateExpression
+ * @param {Object} updateParams.ExpressionAttributeNames
+ * @param {Object} updateParams.ExpressionAttributeValues
  * @returns
  */
-async function update(id, updates) {
-  const updateParams = constructUpdates(updates);
+ async function genericUpdate(id, secondaryId, updateParams) {
   await documentClient.update({
     TableName,
     Key: {
@@ -88,6 +93,36 @@ async function update(id, updates) {
     },
     ...updateParams,
   });
+}
+
+/**
+ *
+ * @param {string} id Application ID
+ * @param {Object} updates Object with KV pairs of attributes to update
+ * @returns
+ */
+async function update(id, updates) {
+  const updateParams = constructUpdates(updates);
+  await genericUpdate(id, secondaryId, updateParams);
+}
+
+/**
+ *
+ * @param {string} id Application ID
+ * @param {Object} userCountChange Amount to add to application's user count
+ * @returns
+ */
+async function updateUserCount(applicationId, userCountChange) {
+  const updateParams = {
+    UpdateExpression: `ADD #userCountKey :userCountChange`,
+    ExpressionAttributeNames: {
+      '#userCountKey': USER_COUNT_ATTRIBUTE_NAME,
+    },
+    ExpressionAttributeValues: {
+      ':userCountChange': userCountChange,
+    },
+  };
+  await genericUpdate(applicationId, secondaryId, updateParams);
 }
 
 /**
@@ -109,5 +144,6 @@ module.exports = {
   create,
   read,
   update,
+  updateUserCount,
   remove,
 };

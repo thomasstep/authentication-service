@@ -1,6 +1,8 @@
 const {
+  readUser,
+  removeSignInMethod,
   removeUser,
-  emitUpdateUserCountEvent,
+  updateUserCount,
 } = require('/opt/ports');
 
 /**
@@ -10,9 +12,20 @@ const {
  * @returns
  */
 async function logic(applicationId, userId) {
+  const userData = await readUser(applicationId, userId);
+  const {
+    methodsUsed,
+  } = userData;
+  const promises = [];
+  methodsUsed.forEach((methodSortKey) => {
+    promises.push(removeSignInMethod(applicationId, userId, methodSortKey));
+  })
+  // Wait for all sign in methods to be removed before removing user
+  //  it's async anyway
+  await Promise.all(promises);
   await Promise.all([
     removeUser(applicationId, userId),
-    emitUpdateUserCountEvent(applicationId, -1),
+    updateUserCount(applicationId, -1),
   ]);
 }
 

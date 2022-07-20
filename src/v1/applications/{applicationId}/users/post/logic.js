@@ -18,10 +18,6 @@ async function logic(applicationId, email, password) {
     passwordHash,
   );
 
-  // Future TODO emit updateUserCount event if no verification needed
-  //  (user is immediately created)
-  //  this is for future-use whenever other sign in methods are allowed
-
   await emitEmailVerificationEvent(applicationId, email, verificationToken);
 }
 

@@ -10,6 +10,7 @@ const CONSTANTS = {
   USER_SORT_KEY: 'user',
   USER_SIGN_IN_METHOD_ATTRIBUTE_NAME: 'methodsUsed',
   APPLICATION_SORT_KEY: 'application',
+  USER_COUNT_ATTRIBUTE_NAME: 'userCount',
   EMAIL_SIGN_IN_SORT_KEY: 'email',
   PHONE_SIGN_IN_SORT_KEY: 'phone',
   GOOGLE_SIGN_IN_SORT_KEY: 'google',

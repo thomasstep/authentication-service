@@ -4,6 +4,7 @@
 
 ```sh
 # Install shared directory packages
+# Make sure this is run on a Linux machine or bcrypt will throw errors whenever it is run in Lambda
 cd src/shared
 npm install
 # Install jose in the token/get endpoint handler
@@ -40,14 +41,14 @@ This will be a mash of the current data model with small adjustments for the new
 | Partition key       | Sort key               | Attributes     |
 | ------------------- | ---------------------- | -------------- |
 | `<app-id>`          | `application`          | `{ applicationState: enum{active, suspended}, emailFromName: string, resetPasswordUrl: string, verificationUrl: string, userCount: number, created: timestamp }` |
-| `<app-id>`          | `user#<id>`            | `{ methodsUsed: []signinMethods{email, phone, google, etc.}, lastSignin: timestamp, created: timestamp }` |
-| `<app-id>`          | `unverified#<token>`   | `{ emailHash: string, passwordHash: string, ttl: timestamp }` |
-| `<app-id>`          | `email#<emailHash>`    | `{ userId: string, passwordHash: string, lastPasswordChange: timestamp, created: timestamp }` |
-| `<app-id>`          | `reset#<token>`        | `{ emailHash: string, ttl: timestamp }` |
-| `<app-id>`          | `phone#<hashedNumber>` | `{ userId: string, created: timestamp }` |
+| `<app-id>`          | `user#<id>`            | `{ methodsUsed: []signinMethods{email#<email>, phone#<number>, google#<googleId>, etc.}, lastSignin: timestamp, created: timestamp }` |
+| `<app-id>`          | `unverified#<token>`   | `{ email: string, passwordHash: string, ttl: timestamp }` |
+| `<app-id>`          | `email#<email>`    | `{ userId: string, passwordHash: string, lastPasswordChange: timestamp, created: timestamp }` |
+| `<app-id>`          | `reset#<token>`        | `{ email: string, ttl: timestamp }` |
+| `<app-id>`          | `phone#<number>` | `{ userId: string, created: timestamp }` |
 | `<app-id>`          | `google#<googleId>`    | `{ userId: string, created: timestamp }` |
 | `<app-id>`          | `passwordless#<token>` | `{ userId: string, ttl: timestamp }` |
-<!-- | `<app-id>`          | `refresh#<token>`      | `{ emailHash: string, ttl: timestamp }` | -->
+<!-- | `<app-id>`          | `refresh#<token>`      | `{ email: string, ttl: timestamp }` | -->
 
 Changes from the current data model:
 - Application profiles
@@ -143,7 +144,7 @@ All calls require an API key unless otherwise noted. The endpoints that are not 
   - Check that hashed email exists as an active user
   - Send email with token to reset password
   - Response: accepted
-- `POST /applications/{applicationId}/users/password`
+- `PUT /applications/{applicationId}/users/password`
   - Change a user's password after they verify email ownership with the token
   - Does not required an API key
   - Payload:
@@ -189,5 +190,5 @@ Configurage parts: `iss`, `aud` (will not be present if not configured)
 ### Events
 
 - `emailVerification` is emitted for the main purpose of sending an email asynchronously to verify that an entered email address is valid.
-- `updateUserCount` is emitted for the main purpose of incrementing the user count on an application.
 - `passwordReset` is emitted for the main purpose of sending an email asynchronously to start the password reset process by validing email ownership.
+- `deleteUser` is emitted for the main purpose of deleting a user.

@@ -4,7 +4,7 @@ const {
 const {
   createEmailSignIn,
   createUser,
-  emitUserCreatedEvent,
+  updateUserCount,
   readEmailSignInVerification,
   removeEmailSignInVerification,
 } = require('/opt/ports');
@@ -35,7 +35,7 @@ async function logic(applicationId, token) {
   await Promise.all([
     removeEmailSignInVerification(applicationId, token),
     createEmailSignIn(applicationId, userId, email, passwordHash),
-    emitUserCreatedEvent(applicationId, userId),
+    updateUserCount(applicationId, 1),
   ]);
   return userId;
 }

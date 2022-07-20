@@ -1,3 +1,7 @@
+
+const {
+  MissingResourceError,
+} = require('/opt/errors');
 const { readApplication } = require('/opt/ports');
 
 /**
@@ -17,6 +21,10 @@ const { readApplication } = require('/opt/ports');
 
 async function logic(applicationId) {
   const applicationData = await readApplication(applicationId);
+  if (!applicationData.id) {
+    throw new MissingResourceError('Application not found.');
+  }
+
   return applicationData;
 }
 

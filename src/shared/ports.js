@@ -10,7 +10,6 @@ const {
 } = require('/opt/ses');
 const {
   emitEmailVerification,
-  emitUpdateUserCount,
 } = require('/opt/sns');
 
 async function createApplication() {
@@ -30,14 +29,11 @@ async function createEmailSignInVerification(applicationId, email, passwordHash)
     throw new ExistingUsersError('This email address is already in use.');
   }
 
-  await users.createEmailSignInVerification(applicationId, email, passwordHash);
+  return await users.createEmailSignInVerification(applicationId, email, passwordHash);
 }
 
 async function createEmailSignIn(applicationId, userId, email, passwordHash) {
-  await Promise.all([
-    users.createEmailSignIn(applicationId, userId, email, passwordHash),
-    users.addSignInMethod(applicationId, userId, users.signInTypes.EMAIL),
-  ]);
+  await users.createEmailSignIn(applicationId, userId, email, passwordHash);
 }
 
 async function createResetToken(applicationId, email) {
@@ -49,24 +45,12 @@ async function createResetToken(applicationId, email) {
     throw new MissingResourceError('Email not found.');
   }
 
-  const resetToken = await users.createEmailSignInVerification(applicationId, email);
+  const resetToken = await users.createResetToken(applicationId, email);
   return resetToken;
 }
 
 async function emitEmailVerificationEvent(applicationId, email, verificationToken) {
   await emitEmailVerification(applicationId, email, verificationToken);
-}
-
-async function emitUpdateUserCountEvent(applicationId, userCountChange) {
-  await emitUpdateUserCount(applicationId, userCountChange);
-}
-
-// eslint-disable-next-line no-unused-vars
-async function emitUserCreatedEvent(applicationId, userId) {
-  // For future use, send an actual event with the userId if needed
-  // Need to send the user count update event here because this is an
-  //  implementation detail I want to hide from the logic
-  await emitUpdateUserCount(applicationId, 1);
 }
 
 async function readApplication(id) {
@@ -105,11 +89,11 @@ async function updateUser(applicationId, id, updates) {
 }
 
 async function updatePassword(applicationId, email, passwordHash) {
-  await updatePassword(applicationId, email, passwordHash);
+  await users.updatePassword(applicationId, email, passwordHash);
 }
 
 async function updateUserCount(applicationId, userCountChange) {
-  await applications.update(applicationId, { userCount: userCountChange });
+  await applications.updateUserCount(applicationId, userCountChange);
 }
 
 async function removeApplication(id) {
@@ -118,6 +102,10 @@ async function removeApplication(id) {
 
 async function removeUser(applicationId, id) {
   await users.remove(applicationId, id);
+}
+
+async function removeSignInMethod(applicationId, userId, sortKey) {
+  await users.removeSignInMethod(applicationId, userId, sortKey);
 }
 
 async function removeEmailSignInVerification(applicationId, token) {
@@ -135,8 +123,6 @@ module.exports = {
   createEmailSignIn,
   createResetToken,
   emitEmailVerificationEvent,
-  emitUpdateUserCountEvent,
-  emitUserCreatedEvent,
   readApplication,
   readUser,
   readEmailSignInVerification,
@@ -148,6 +134,7 @@ module.exports = {
   updateUserCount,
   removeApplication,
   removeUser,
+  removeSignInMethod,
   removeEmailSignInVerification,
   removeResetToken,
   sendResetPasswordEmail,

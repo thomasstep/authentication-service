@@ -30,7 +30,6 @@ const { logger } = require('/opt/logger');
 
 async function logic(applicationId, email, password) {
   const emailData = await readEmailSignIn(applicationId, email);
-  logger.info(emailData);
   const isValidPassword = compare(password, emailData.passwordHash);
   if (!isValidPassword) {
     throw new UnauthorizedError('Wrong password.');

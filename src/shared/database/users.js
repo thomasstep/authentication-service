@@ -113,18 +113,25 @@ async function createEmailSignInVerification(applicationId, email, passwordHash)
  */
 async function createEmailSignIn(applicationId, id, email, passwordHash) {
   const now = getCurrentTimestamp();
-  await documentClient.put({
-    TableName,
-    Item: {
-      id: applicationId,
-      secondaryId: constructEmailSignInSortKey(email),
-      userId: id,
-      passwordHash,
-      lastPasswordChange: now,
-      created: now,
-    },
-    ConditionExpression: 'attribute_not_exists(secondaryId)',
-  });
+  await Promise.all([
+    documentClient.put({
+      TableName,
+      Item: {
+        id: applicationId,
+        secondaryId: constructEmailSignInSortKey(email),
+        userId: id,
+        passwordHash,
+        lastPasswordChange: now,
+        created: now,
+      },
+      ConditionExpression: 'attribute_not_exists(secondaryId)',
+    }),
+    addSignInMethod(
+      applicationId,
+      id,
+      constructEmailSignInSortKey(email),
+    ),
+  ]);
 }
 
 /**
@@ -179,7 +186,6 @@ async function readAttrs(itemPayload) {
  * @param {string} id User's ID
  * @returns {Object} userData
  *                   {
- *                     id: string,
  *                     methodsUsed: Set<string>,
  *                     lastPasswordChange: string,
  *                     lastSignin: string,
@@ -297,6 +303,28 @@ async function addSignInMethod(applicationId, id, signInType) {
 }
 
 /**
+ * @param {string} applicationId Application ID
+ * @param {string} id User's ID
+ * @param {string} signInSortKey Sort key (probably from user.methodsUsed)
+ * @returns
+ */
+ async function removeSignInMethod(applicationId, id, signInSortKey) {
+  const updateParams = {
+    UpdateExpression: `DELETE #signInMethodKey :signInMethod`,
+    ExpressionAttributeNames: {
+      '#signInMethodKey': USER_SIGN_IN_METHOD_ATTRIBUTE_NAME,
+    },
+    ExpressionAttributeValues: {
+      ':signInMethod': new Set([signInSortKey]),
+    },
+  };
+  await Promise.all([
+    genericUpdate(applicationId, constructUserSortKey(id), updateParams),
+    genericRemove(applicationId, signInSortKey),
+  ]);
+}
+
+/**
  *
  * @param {string} applicationId Application ID
  * @param {string} id User's ID
@@ -340,8 +368,18 @@ async function removeResetToken(applicationId, token) {
   await genericRemove(applicationId, constructResetPasswordSortKey(token));
 }
 
+/**
+ * @param {string} applicationId Application ID
+ * @param {string} email User's email
+ * @returns
+ */
+ async function removeEmailSignIn(applicationId, email) {
+  await genericRemove(applicationId, constructEmailSignInSortKey(email),);
+}
+
 module.exports = {
   signInTypes,
+  constructEmailSignInSortKey,
   create,
   createEmailSignInVerification,
   createEmailSignIn,
@@ -353,7 +391,9 @@ module.exports = {
   update,
   updatePassword,
   addSignInMethod,
+  removeSignInMethod,
   remove,
+  removeEmailSignIn,
   removeEmailSignInVerification,
   removeResetToken,
 };

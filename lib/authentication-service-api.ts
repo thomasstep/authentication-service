@@ -1,3 +1,6 @@
+import * as fs from 'fs';
+import * as path from 'path';
+
 import { Stack, StackProps } from 'aws-cdk-lib';
 import { Construct } from 'constructs';
 import * as apigateway from 'aws-cdk-lib/aws-apigateway';
@@ -9,6 +12,10 @@ import * as sns from 'aws-cdk-lib/aws-sns';
 import * as snsSub from 'aws-cdk-lib/aws-sns-subscriptions';
 import * as sqs from 'aws-cdk-lib/aws-sqs';
 import { CrowApi, CrowApiProps, LambdasByPath } from 'crow-api';
+
+const filePath = path.join(process.cwd(), 'config.json');
+const contents = fs.readFileSync(filePath, 'utf8');
+const config = JSON.parse(contents);
 
 function connectDdbToLambdas(table: dynamodb.Table, apiLambdas: LambdasByPath, paths: string[], envVarName: string) {
   paths.forEach((lambdaPath) => {
@@ -77,7 +84,7 @@ export class Api extends Stack {
         // Defined below
         // '/v1/applications/{applicationId}/users/password/reset/get': {
         // },
-        '/v1/applications/{applicationId}/users/password/post': {
+        '/v1/applications/{applicationId}/users/password/put': {
           requestModels: {
             'application/json': 'updatePassword',
           },
@@ -112,7 +119,7 @@ export class Api extends Stack {
         '/v1/applications/{applicationId}/users/verification/get',
         '/v1/applications/{applicationId}/users/token/get',
         // '/v1/applications/{applicationId}/users/password/reset/get',
-        '/v1/applications/{applicationId}/users/password/post',
+        '/v1/applications/{applicationId}/users/password/put',
         '/v1/applications/{applicationId}/users/me/get',
         '/v1/applications/{applicationId}/users/me/put',
         // '/v1/applications/{applicationId}/users/me/delete',
@@ -203,8 +210,8 @@ export class Api extends Stack {
 
 
     let passwordResetMessage = `$util.urlEncode('{"applicationId":"')$util.escapeJavaScript($input.params('applicationId'))`;
-    passwordResetMessage += `$util.urlEncode('","email":')$util.escapeJavaScript($input.params('email'))`;
-    passwordResetMessage += `$util.urlEncode('}')`;
+    passwordResetMessage += `$util.urlEncode('","email":"')$util.escapeJavaScript($input.params('email'))`;
+    passwordResetMessage += `$util.urlEncode('"}')`;
     resetResource.addMethod(
       'GET',
       new apigateway.AwsIntegration({
@@ -259,8 +266,8 @@ export class Api extends Stack {
 
 
      let deleteUserMessage = `$util.urlEncode('{"applicationId":"')$util.escapeJavaScript($input.params('applicationId'))`;
-     deleteUserMessage += `$util.urlEncode('","userId":')$context.authorizer.userId`;
-     deleteUserMessage += `$util.urlEncode('}')`;
+     deleteUserMessage += `$util.urlEncode('","userId":"')$context.authorizer.userId`;
+     deleteUserMessage += `$util.urlEncode('"}')`;
      meResource.addMethod(
        'DELETE',
        new apigateway.AwsIntegration({
@@ -275,10 +282,10 @@ export class Api extends Stack {
            },
            requestTemplates: {
              'application/json': `Action=Publish&TopicArn=$util.urlEncode(\'${snsTopic.topicArn}\')\
- &Message=${deleteUserMessage}\
- &MessageAttributes.entry.1.Name=operation\
- &MessageAttributes.entry.1.Value.DataType=String\
- &MessageAttributes.entry.1.Value.StringValue=deleteUser`,
+&Message=${deleteUserMessage}\
+&MessageAttributes.entry.1.Name=operation\
+&MessageAttributes.entry.1.Value.DataType=String\
+&MessageAttributes.entry.1.Value.StringValue=deleteUser`,
            },
            integrationResponses: [
              {
@@ -299,7 +306,9 @@ export class Api extends Stack {
          },
        }),
        {
-         ...defaultMethodOptions,
+        ...defaultMethodOptions,
+        authorizationType: apigateway.AuthorizationType.CUSTOM,
+        authorizer: api.authorizer,
        },
      );
     /**************************************************************************
@@ -312,19 +321,16 @@ export class Api extends Stack {
       {
         camelCase: 'emailVerification',
         kebabCase: 'email-verification',
-      },
-      {
-        camelCase: 'updateUserCount',
-        kebabCase: 'update-user-count',
+        usesSes: true,
       },
       {
         camelCase: 'passwordReset',
         kebabCase: 'password-reset',
+        usesSes: true,
       },
       {
         camelCase: 'deleteUser',
         kebabCase: 'delete-user',
-        usesSns: true,
       },
     ];
 
@@ -359,9 +365,14 @@ export class Api extends Stack {
           },
         }
       ));
-      if (name.usesSns) {
-        snsTopic.grantPublish(lambdaFunction);
-        lambdaFunction.addEnvironment('PRIMARY_SNS_TOPIC', snsTopic.topicArn);
+      if (name.usesSes) {
+        lambdaFunction.role?.addToPrincipalPolicy(
+          new iam.PolicyStatement({
+            actions: ['ses:SendEmail'],
+            effect: iam.Effect.ALLOW,
+            resources: [config.sesEmailIdentityArn],
+          }),
+        );
       }
     });
 
