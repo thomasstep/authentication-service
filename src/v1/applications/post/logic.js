@@ -1,4 +1,7 @@
-const { createApplication } = require('/opt/ports');
+const {
+  createApplication,
+  emitApplicationCreated,
+} = require('/opt/ports');
 
 /**
  * Business logic
@@ -7,8 +10,7 @@ const { createApplication } = require('/opt/ports');
 
 async function logic() {
   const applicationId = await createApplication();
-  // TODO create RSA key and upload to S3
-  // TODO store public key as jwks
+  await emitApplicationCreated(applicationId);
   return applicationId;
 }
 

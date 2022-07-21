@@ -1,6 +1,13 @@
 const jose = require('jose');
 // const config = require('/opt/config');
+const { KEY_GENERATION_ALGORITHM } = require('/opt/config');
+const {
+  getPublicKeyPath,
+} = require('/opt/fileNames');
 const { logger } = require('/opt/logger');
+const {
+  readFile,
+} = require('/opt/ports');
 
 // Helper function to generate an IAM policy
 function generatePolicy(principalId, apiStageArn, userId /* userData */) {
@@ -35,11 +42,12 @@ async function handler(event) {
   const [apiGatewayArn, stage] = methodArn.split('/');
   const apiStageArn = `${apiGatewayArn}/${stage}`;
 
+  const applicationId = event.pathParameters.applicationId;
+
   try {
-    // Get public key from S3
-    const jwksUrl = 'https://crowauth.thomasstep.com/v1/jwks.json';
-    const JWKS = jose.createRemoteJWKSet(new URL(jwksUrl));
-    const { payload } = await jose.jwtVerify(token, JWKS);
+    const publicKey = await readFile(getPublicKeyPath(applicationId));
+    const publicKeyLike = await jose.importSPKI(publicKey, KEY_GENERATION_ALGORITHM)
+    const { payload } = await jose.jwtVerify(token, publicKeyLike);
     const { sub: userId } = payload;
 
     const policy = generatePolicy(userId, apiStageArn, userId);

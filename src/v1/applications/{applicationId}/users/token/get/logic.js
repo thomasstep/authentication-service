@@ -5,19 +5,23 @@ const path = require('path');
 const jose = require('jose');
 
 const {
+  KEY_GENERATION_ALGORITHM,
   tokenExpirationTime,
   tokenIssuer,
-  PRIVATE_KEY_NAME,
 } = require('/opt/config');
 const {
   UnauthorizedError,
 } = require('/opt/errors');
+const {
+  getPrivateKeyPath,
+} = require('/opt/fileNames');
 const {
   hash,
   compare,
 } = require('/opt/hashing');
 const {
   readEmailSignIn,
+  readFile,
 } = require('/opt/ports');
 const { logger } = require('/opt/logger');
 
@@ -35,10 +39,8 @@ async function logic(applicationId, email, password) {
     throw new UnauthorizedError('Wrong password.');
   }
 
-  // TODO Should this live in S3?
-  const privateKeyPath = path.resolve(__dirname, PRIVATE_KEY_NAME);
-  const privateKey = fs.readFileSync(privateKeyPath, 'utf8');
-  const cryptoPrivateKey = crypto.createPrivateKey(privateKey);
+  const privateKey = await readFile(applicationId);
+  const privateKeyLike = await jose.importPKCS8(privateKey, KEY_GENERATION_ALGORITHM);
   const token = await new jose.SignJWT({})
     .setProtectedHeader({ alg: 'RS256' })
     .setIssuer(tokenIssuer)
@@ -46,7 +48,7 @@ async function logic(applicationId, email, password) {
     // .setAudience(tokenAudience)
     .setExpirationTime(tokenExpirationTime)
     .setIssuedAt()
-    .sign(cryptoPrivateKey);
+    .sign(privateKeyLike);
 
   return token;
 }

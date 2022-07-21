@@ -1,5 +1,6 @@
 const { ExistingUsersError } = require('/opt/errors');
 const {
+  emitApplicationDeleted,
   readApplication,
   removeApplication,
 } = require('/opt/ports');
@@ -16,9 +17,11 @@ async function logic(applicationId) {
   if (userCount > 0) {
     throw new ExistingUsersError('There are still users using this application');
   }
-  // TODO delete RSA key and JWKS from S3
 
-  await removeApplication(applicationId);
+  await Promise.all([
+    removeApplication(applicationId),
+    emitApplicationDeleted(applicationId),
+  ]);
 }
 
 module.exports = {

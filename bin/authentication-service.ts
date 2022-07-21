@@ -3,12 +3,15 @@ import 'source-map-support/register';
 import * as cdk from 'aws-cdk-lib';
 import * as apigateway from 'aws-cdk-lib/aws-apigateway';
 import { Tables } from '../lib/authentication-service-tables';
+import { Bucket } from '../lib/authentication-service-buckets';
 import { Api } from '../lib/authentication-service-api';
 
 const app = new cdk.App();
 const devTables = new Tables(app, 'authentication-service-tables-dev', {});
+const devBuckets = new Bucket(app, 'authentication-service-buckets-dev', {});
 new Api(app, 'authentication-service-api-dev', {
   primaryTable: devTables.primaryTable,
+  primaryBucket: devBuckets.primaryBucket,
   crowApiProps: {
     apiGatewayName: 'authentication-service-dev',
     useAuthorizerLambda: true,

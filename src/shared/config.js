@@ -21,6 +21,9 @@ const CONSTANTS = {
   DEFAULT_TOKEN_TTL: 2592000, // 30 days in seconds
   VERIFICATION_TTL: 900, // 30 days in seconds
   TTL_ATTRIBUTE_NAME: 'ttl',
+  // S3
+  DEFAULT_S3_REGION: 'us-east-1',
+  PRIMARY_BUCKET_NAME: process.env.PRIMARY_BUCKET_NAME,
   // SES
   DEFAULT_SES_REGION: 'us-east-1',
   RESET_PASSWORD_EMAIL_TITLE: 'Reset Password',
@@ -40,8 +43,7 @@ const CONSTANTS = {
   CONFLICT_STATUS_CODE: 409,
   SERVER_ERROR_STATUS_CODE: 500,
   // Misc
-  PRIVATE_KEY_NAME: 'authentication-service.key',
-  PUBLIC_KEY_NAME: 'authentication-service.key.pub',
+  KEY_GENERATION_ALGORITHM: 'RS256',
   LOGGER_LEVEL: process.env.LOGGER_LEVEL || 'debug',
 };
 

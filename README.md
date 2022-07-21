@@ -40,7 +40,7 @@ This will be a mash of the current data model with small adjustments for the new
 
 | Partition key       | Sort key               | Attributes     |
 | ------------------- | ---------------------- | -------------- |
-| `<app-id>`          | `application`          | `{ applicationState: enum{active, suspended}, emailFromName: string, resetPasswordUrl: string, verificationUrl: string, userCount: number, created: timestamp }` |
+| `<app-id>`          | `application`          | `{ applicationState: enum{active, suspended}, emailFromName: string, resetPasswordUrl: string, verificationUrl: string, userCount: number, jwksUri: string, created: timestamp }` |
 | `<app-id>`          | `user#<id>`            | `{ methodsUsed: []signinMethods{email#<email>, phone#<number>, google#<googleId>, etc.}, lastSignin: timestamp, created: timestamp }` |
 | `<app-id>`          | `unverified#<token>`   | `{ email: string, passwordHash: string, ttl: timestamp }` |
 | `<app-id>`          | `email#<email>`    | `{ userId: string, passwordHash: string, lastPasswordChange: timestamp, created: timestamp }` |
@@ -192,3 +192,9 @@ Configurage parts: `iss`, `aud` (will not be present if not configured)
 - `emailVerification` is emitted for the main purpose of sending an email asynchronously to verify that an entered email address is valid.
 - `passwordReset` is emitted for the main purpose of sending an email asynchronously to start the password reset process by validing email ownership.
 - `deleteUser` is emitted for the main purpose of deleting a user.
+- `applicationCreated` is emitted after an application has been created. Handles actions such as creating and storing public and private RSA keys.
+- `applicationDeleted` is emitted after an application has been deleted. Handles actions such as deleting public and private RSA keys.
+
+### Next Time
+- Finish code for async application creation of the jwks
+  - https://thomasstep.com/blog/a-guide-to-using-jwt-in-javascript#creating-a-jwks

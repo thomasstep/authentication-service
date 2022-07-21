@@ -8,6 +8,7 @@ import * as dynamodb from 'aws-cdk-lib/aws-dynamodb';
 import * as iam from 'aws-cdk-lib/aws-iam';
 import * as lambda from 'aws-cdk-lib/aws-lambda';
 import * as logs from 'aws-cdk-lib/aws-logs';
+import * as s3 from 'aws-cdk-lib/aws-s3';
 import * as sns from 'aws-cdk-lib/aws-sns';
 import * as snsSub from 'aws-cdk-lib/aws-sns-subscriptions';
 import * as sqs from 'aws-cdk-lib/aws-sqs';
@@ -17,6 +18,8 @@ const filePath = path.join(process.cwd(), 'config.json');
 const contents = fs.readFileSync(filePath, 'utf8');
 const config = JSON.parse(contents);
 
+const s3EnvironmentVariableName = 'PRIMARY_BUCKET_NAME';
+
 function connectDdbToLambdas(table: dynamodb.Table, apiLambdas: LambdasByPath, paths: string[], envVarName: string) {
   paths.forEach((lambdaPath) => {
     const lambda = apiLambdas[lambdaPath];
@@ -25,8 +28,17 @@ function connectDdbToLambdas(table: dynamodb.Table, apiLambdas: LambdasByPath, p
   })
 }
 
+function grantReadS3ToLambdas(bucket: s3.Bucket, apiLambdas: LambdasByPath, paths: string[], envVarName: string) {
+  paths.forEach((lambdaPath) => {
+    const lambda = apiLambdas[lambdaPath];
+    bucket.grantRead(lambda);
+    lambda.addEnvironment(envVarName, bucket.bucketName);
+  })
+}
+
 interface ISiteAnalyticsStackProps extends StackProps {
   primaryTable: dynamodb.Table,
+  primaryBucket: s3.Bucket,
   crowApiProps: CrowApiProps,
 }
 
@@ -37,6 +49,7 @@ export class Api extends Stack {
 
     const {
       primaryTable,
+      primaryBucket,
       crowApiProps,
     } = props;
 
@@ -127,8 +140,16 @@ export class Api extends Stack {
       'PRIMARY_TABLE_NAME',
     );
 
+    grantReadS3ToLambdas(
+      primaryBucket,
+      api.lambdaFunctions,
+      [
+        '/v1/applications/{applicationId}/users/token/get',
+      ],
+      'PRIMARY_BUCKET_NAME',
+    );
 
-    primaryTable.grantFullAccess(api.authorizerLambda);
+    primaryBucket.grantRead(api.authorizerLambda);
     api.authorizerLambda.addEnvironment('PRIMARY_TABLE_NAME', primaryTable.tableName);
 
     /**************************************************************************
@@ -332,6 +353,16 @@ export class Api extends Stack {
         camelCase: 'deleteUser',
         kebabCase: 'delete-user',
       },
+      {
+        camelCase: 'applicationCreated',
+        kebabCase: 'application-created',
+        putsS3: true,
+      },
+      {
+        camelCase: 'applicationDeleted',
+        kebabCase: 'application-deleted',
+        deletesS3: true,
+      },
     ];
 
     asyncLambdaNames.forEach((name) => {
@@ -373,6 +404,16 @@ export class Api extends Stack {
             resources: [config.sesEmailIdentityArn],
           }),
         );
+      }
+
+      if (name.putsS3) {
+        primaryBucket.grantPut(lambdaFunction);
+        lambdaFunction.addEnvironment(s3EnvironmentVariableName, primaryBucket.bucketName);
+      }
+
+      if (name.deletesS3) {
+        primaryBucket.grantDelete(lambdaFunction);
+        lambdaFunction.addEnvironment(s3EnvironmentVariableName, primaryBucket.bucketName);
       }
     });
 

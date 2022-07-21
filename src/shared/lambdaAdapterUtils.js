@@ -66,6 +66,9 @@ function withErrorHandling(func) {
         message = err.message;
       }
 
+      // TODO catch s3 error for missing object; in case of keys missing
+      // TODO If key/object doesn't exist in S3, trigger an alarm
+
       const errorPayload = {
         statusCode,
         body: JSON.stringify({

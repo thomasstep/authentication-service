@@ -4,11 +4,19 @@ const {
   ExistingUsersError,
   MissingResourceError,
 } = require('/opt/errors');
+// TODO don't directly export these, make them ports
+const {
+  saveFile,
+  readFile,
+  removeFile,
+} = require('/opt/s3');
 const {
   sendResetPasswordEmail,
   sendVerificationEmail,
 } = require('/opt/ses');
 const {
+  emitApplicationCreated,
+  emitApplicationDeleted,
   emitEmailVerification,
 } = require('/opt/sns');
 
@@ -122,12 +130,16 @@ module.exports = {
   createEmailSignInVerification,
   createEmailSignIn,
   createResetToken,
+  emitApplicationCreated,
+  emitApplicationDeleted,
   emitEmailVerificationEvent,
   readApplication,
   readUser,
   readEmailSignInVerification,
   readEmailSignIn,
   readResetToken,
+  readFile,
+  removeFile,
   updateApplication,
   updateUser,
   updatePassword,
@@ -137,6 +149,7 @@ module.exports = {
   removeSignInMethod,
   removeEmailSignInVerification,
   removeResetToken,
+  saveFile,
   sendResetPasswordEmail,
   sendVerificationEmail,
 };
