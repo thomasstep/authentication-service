@@ -12,7 +12,6 @@ async function handler(event) {
       } = record;
       // API Gateway is set up to send JSON of required path params
       const message = JSON.parse(stringifiedMessage);
-      logger.debug(message);
       const {
         applicationId,
       } = message;

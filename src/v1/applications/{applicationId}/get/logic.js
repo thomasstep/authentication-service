@@ -1,4 +1,3 @@
-
 const {
   MissingResourceError,
 } = require('/opt/errors');

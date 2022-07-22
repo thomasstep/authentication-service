@@ -16,6 +16,7 @@
     "@aws-sdk/client-sns": "^3.121.0",
     "@aws-sdk/lib-dynamodb": "^3.113.0",
     "bcrypt": "^5.0.1",
+    "jose": "^4.8.3",
     "winston": "^3.7.2"
   }
 }

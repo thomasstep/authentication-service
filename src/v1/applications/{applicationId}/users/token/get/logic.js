@@ -1,7 +1,3 @@
-const crypto = require('crypto');
-const fs = require('fs');
-const path = require('path');
-
 const jose = require('jose');
 
 const {
@@ -16,14 +12,12 @@ const {
   getPrivateKeyPath,
 } = require('/opt/fileNames');
 const {
-  hash,
   compare,
 } = require('/opt/hashing');
 const {
   readEmailSignIn,
   readFile,
 } = require('/opt/ports');
-const { logger } = require('/opt/logger');
 
 /**
  * Business logic
@@ -39,7 +33,7 @@ async function logic(applicationId, email, password) {
     throw new UnauthorizedError('Wrong password.');
   }
 
-  const privateKey = await readFile(applicationId);
+  const privateKey = await readFile(getPrivateKeyPath(applicationId));
   const privateKeyLike = await jose.importPKCS8(privateKey, KEY_GENERATION_ALGORITHM);
   const token = await new jose.SignJWT({})
     .setProtectedHeader({ alg: 'RS256' })

@@ -37,7 +37,7 @@ async function createEmailSignInVerification(applicationId, email, passwordHash)
     throw new ExistingUsersError('This email address is already in use.');
   }
 
-  return await users.createEmailSignInVerification(applicationId, email, passwordHash);
+  return users.createEmailSignInVerification(applicationId, email, passwordHash);
 }
 
 async function createEmailSignIn(applicationId, userId, email, passwordHash) {

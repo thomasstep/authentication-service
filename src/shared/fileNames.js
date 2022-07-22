@@ -1,3 +1,8 @@
+/**
+ * If these change, make sure to also change the API Gateway -> S3
+ *   service proxy integration.
+ */
+
 function getPublicKeyPath(applicationId) {
   return `private/${applicationId}/private.key`;
 }

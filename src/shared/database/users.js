@@ -13,7 +13,6 @@ const {
   generateToken,
   generateEasyToken,
 } = require('/opt/generateToken');
-const { logger } = require('/opt/logger');
 
 /**
  * @enum {SignInTypes}
@@ -111,36 +110,6 @@ async function createEmailSignInVerification(applicationId, email, passwordHash)
  * @param {string} passwordHash User's password hashed
  * @returns
  */
-async function createEmailSignIn(applicationId, id, email, passwordHash) {
-  const now = getCurrentTimestamp();
-  await Promise.all([
-    documentClient.put({
-      TableName,
-      Item: {
-        id: applicationId,
-        secondaryId: constructEmailSignInSortKey(email),
-        userId: id,
-        passwordHash,
-        lastPasswordChange: now,
-        created: now,
-      },
-      ConditionExpression: 'attribute_not_exists(secondaryId)',
-    }),
-    addSignInMethod(
-      applicationId,
-      id,
-      constructEmailSignInSortKey(email),
-    ),
-  ]);
-}
-
-/**
- * @param {string} applicationId Application ID
- * @param {string} id User's ID
- * @param {string} email User's email hashed
- * @param {string} passwordHash User's password hashed
- * @returns
- */
 async function createResetToken(applicationId, email) {
   const ttl = Math.floor(Date.now() / 1000) + VERIFICATION_TTL;
   const token = generateEasyToken();
@@ -162,12 +131,10 @@ async function createResetToken(applicationId, email) {
  * @returns {Object}
  */
 async function readAttrs(itemPayload) {
-  logger.info(itemPayload)
   const item = await documentClient.get({
     TableName,
     Key: itemPayload,
   });
-  logger.info(item)
   if (!item.Item) {
     return {};
   }
@@ -291,7 +258,7 @@ async function updatePassword(applicationId, email, passwordHash) {
  */
 async function addSignInMethod(applicationId, id, signInType) {
   const updateParams = {
-    UpdateExpression: `ADD #signInMethodKey :signInMethod`,
+    UpdateExpression: 'ADD #signInMethodKey :signInMethod',
     ExpressionAttributeNames: {
       '#signInMethodKey': USER_SIGN_IN_METHOD_ATTRIBUTE_NAME,
     },
@@ -305,22 +272,30 @@ async function addSignInMethod(applicationId, id, signInType) {
 /**
  * @param {string} applicationId Application ID
  * @param {string} id User's ID
- * @param {string} signInSortKey Sort key (probably from user.methodsUsed)
+ * @param {string} email User's email hashed
+ * @param {string} passwordHash User's password hashed
  * @returns
  */
- async function removeSignInMethod(applicationId, id, signInSortKey) {
-  const updateParams = {
-    UpdateExpression: `DELETE #signInMethodKey :signInMethod`,
-    ExpressionAttributeNames: {
-      '#signInMethodKey': USER_SIGN_IN_METHOD_ATTRIBUTE_NAME,
-    },
-    ExpressionAttributeValues: {
-      ':signInMethod': new Set([signInSortKey]),
-    },
-  };
+async function createEmailSignIn(applicationId, id, email, passwordHash) {
+  const now = getCurrentTimestamp();
   await Promise.all([
-    genericUpdate(applicationId, constructUserSortKey(id), updateParams),
-    genericRemove(applicationId, signInSortKey),
+    documentClient.put({
+      TableName,
+      Item: {
+        id: applicationId,
+        secondaryId: constructEmailSignInSortKey(email),
+        userId: id,
+        passwordHash,
+        lastPasswordChange: now,
+        created: now,
+      },
+      ConditionExpression: 'attribute_not_exists(secondaryId)',
+    }),
+    addSignInMethod(
+      applicationId,
+      id,
+      constructEmailSignInSortKey(email),
+    ),
   ]);
 }
 
@@ -338,6 +313,28 @@ async function genericRemove(id, secondaryId) {
       secondaryId,
     },
   });
+}
+
+/**
+ * @param {string} applicationId Application ID
+ * @param {string} id User's ID
+ * @param {string} signInSortKey Sort key (probably from user.methodsUsed)
+ * @returns
+ */
+async function removeSignInMethod(applicationId, id, signInSortKey) {
+  const updateParams = {
+    UpdateExpression: 'DELETE #signInMethodKey :signInMethod',
+    ExpressionAttributeNames: {
+      '#signInMethodKey': USER_SIGN_IN_METHOD_ATTRIBUTE_NAME,
+    },
+    ExpressionAttributeValues: {
+      ':signInMethod': new Set([signInSortKey]),
+    },
+  };
+  await Promise.all([
+    genericUpdate(applicationId, constructUserSortKey(id), updateParams),
+    genericRemove(applicationId, signInSortKey),
+  ]);
 }
 
 /**
@@ -373,8 +370,8 @@ async function removeResetToken(applicationId, token) {
  * @param {string} email User's email
  * @returns
  */
- async function removeEmailSignIn(applicationId, email) {
-  await genericRemove(applicationId, constructEmailSignInSortKey(email),);
+async function removeEmailSignIn(applicationId, email) {
+  await genericRemove(applicationId, constructEmailSignInSortKey(email));
 }
 
 module.exports = {

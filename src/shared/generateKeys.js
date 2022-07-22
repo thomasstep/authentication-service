@@ -14,12 +14,12 @@ async function generateKeys() {
   // });
   const publicKeyString = await jose.exportSPKI(publicKey);
   const privateKeyString = await jose.exportPKCS8(privateKey);
-  const publicJwk = await jose.exportJWK(publicKey)
+  const publicJwk = await jose.exportJWK(publicKey);
   return {
     publicKey: publicKeyString,
     privateKey: privateKeyString,
     publicJwk,
-  }
+  };
 }
 
 module.exports = {

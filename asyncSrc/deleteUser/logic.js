@@ -19,7 +19,7 @@ async function logic(applicationId, userId) {
   const promises = [];
   methodsUsed.forEach((methodSortKey) => {
     promises.push(removeSignInMethod(applicationId, userId, methodSortKey));
-  })
+  });
   // Wait for all sign in methods to be removed before removing user
   //  it's async anyway
   await Promise.all(promises);

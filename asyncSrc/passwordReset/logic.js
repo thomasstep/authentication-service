@@ -1,4 +1,3 @@
-const { hash } = require('/opt/hashing');
 const {
   createResetToken,
   readApplication,

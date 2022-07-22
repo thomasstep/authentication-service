@@ -14,7 +14,6 @@ new Api(app, 'authentication-service-api-dev', {
   primaryBucket: devBuckets.primaryBucket,
   crowApiProps: {
     apiGatewayName: 'authentication-service-dev',
-    useAuthorizerLambda: true,
     createApiKey: true,
     lambdaIntegrationOptions: {
       '/v1/applications/{applicationId}/users/verification/get': {

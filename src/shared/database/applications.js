@@ -84,12 +84,12 @@ async function read(id) {
  * @param {Object} updateParams.ExpressionAttributeValues
  * @returns
  */
- async function genericUpdate(id, secondaryId, updateParams) {
+async function genericUpdate(id, secId, updateParams) {
   await documentClient.update({
     TableName,
     Key: {
       id,
-      secondaryId,
+      secondaryId: secId,
     },
     ...updateParams,
   });
@@ -114,7 +114,7 @@ async function update(id, updates) {
  */
 async function updateUserCount(applicationId, userCountChange) {
   const updateParams = {
-    UpdateExpression: `ADD #userCountKey :userCountChange`,
+    UpdateExpression: 'ADD #userCountKey :userCountChange',
     ExpressionAttributeNames: {
       '#userCountKey': USER_COUNT_ATTRIBUTE_NAME,
     },

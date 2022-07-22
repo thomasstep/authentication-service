@@ -1,7 +1,7 @@
 import * as fs from 'fs';
 import * as path from 'path';
 
-import { Stack, StackProps } from 'aws-cdk-lib';
+import { Stack, StackProps, Duration } from 'aws-cdk-lib';
 import { Construct } from 'constructs';
 import * as apigateway from 'aws-cdk-lib/aws-apigateway';
 import * as dynamodb from 'aws-cdk-lib/aws-dynamodb';
@@ -55,9 +55,24 @@ export class Api extends Stack {
 
     const snsTopic = new sns.Topic(this, 'topic');
 
+    const authorizerLambda = new lambda.Function(this, 'request-authorizer-lambda', {
+        runtime: lambda.Runtime.NODEJS_14_X,
+        code: lambda.Code.fromAsset('src/authorizer'),
+        handler: 'index.handler',
+        logRetention: logs.RetentionDays.ONE_WEEK,
+    });
+    const authorizer = new apigateway.RequestAuthorizer(
+      this,
+      'request-authorizer',
+      {
+        handler: authorizerLambda,
+        resultsCacheTtl: Duration.seconds(3600),
+        identitySources: [apigateway.IdentitySource.header('Authorization')]
+      },
+    );
     const authorizationConfig = {
       authorizationType: apigateway.AuthorizationType.CUSTOM,
-      useAuthorizerLambda: true,
+      authorizer,
     };
     const finalCrowApiProps = {
       ...crowApiProps,
@@ -146,11 +161,14 @@ export class Api extends Stack {
       [
         '/v1/applications/{applicationId}/users/token/get',
       ],
-      'PRIMARY_BUCKET_NAME',
+      s3EnvironmentVariableName,
     );
 
-    primaryBucket.grantRead(api.authorizerLambda);
-    api.authorizerLambda.addEnvironment('PRIMARY_TABLE_NAME', primaryTable.tableName);
+    primaryBucket.grantRead(authorizerLambda);
+    authorizerLambda.addEnvironment(s3EnvironmentVariableName, primaryBucket.bucketName);
+    if (api.lambdaLayer) {
+      authorizerLambda.addLayers(api.lambdaLayer);
+    }
 
     /**************************************************************************
      *
@@ -181,6 +199,11 @@ export class Api extends Stack {
       throw new Error('application by ID resource cannot be found');
     }
 
+    const jwksResource = applicationIdResource.getResource('jwks.json');
+    if (!jwksResource) {
+      throw new Error('JWKS resource cannot be found');
+    }
+
     const usersResource = applicationIdResource.getResource('users');
     if (!usersResource) {
       throw new Error('users resource cannot be found');
@@ -201,10 +224,15 @@ export class Api extends Stack {
       throw new Error('reset resource cannot be found');
     }
 
-    const apiGatewayRole = new iam.Role(this, 'integration-role', {
+    const snsApiGatewayRole = new iam.Role(this, 'sns-integration-role', {
       assumedBy: new iam.ServicePrincipal('apigateway.amazonaws.com')
     });
-    snsTopic.grantPublish(apiGatewayRole);
+    snsTopic.grantPublish(snsApiGatewayRole);
+
+    const s3ApiGatewayRole = new iam.Role(this, 's3-integration-role', {
+      assumedBy: new iam.ServicePrincipal('apigateway.amazonaws.com')
+    });
+    primaryBucket.grantRead(s3ApiGatewayRole);
 
     const defaultMethodOptions = {
       methodResponses: [
@@ -240,7 +268,7 @@ export class Api extends Stack {
         path: '/',
         integrationHttpMethod: 'POST',
         options: {
-          credentialsRole: apiGatewayRole,
+          credentialsRole: snsApiGatewayRole,
           passthroughBehavior: apigateway.PassthroughBehavior.NEVER,
           requestParameters: {
             'integration.request.header.Content-Type': "'application/x-www-form-urlencoded'",
@@ -281,6 +309,76 @@ export class Api extends Stack {
 
     /**************************************************************************
      *
+     * GET application JWKS
+     *
+     *************************************************************************/
+
+
+    jwksResource.addMethod(
+      'GET',
+      new apigateway.AwsIntegration({
+        service: 's3',
+        path: '{bucket}/public/{applicationId}/jwks.json',
+        integrationHttpMethod: 'GET',
+        options: {
+          credentialsRole: s3ApiGatewayRole,
+          passthroughBehavior: apigateway.PassthroughBehavior.WHEN_NO_TEMPLATES,
+          requestParameters: {
+            'integration.request.header.Content-Type': "'application/x-www-form-urlencoded'",
+            'integration.request.path.bucket': `'${primaryBucket.bucketName}'`,
+            'integration.request.path.applicationId': 'method.request.path.applicationId',
+          },
+          integrationResponses: [
+            {
+              statusCode: "200",
+            },
+            {
+              statusCode: "404",
+              selectionPattern: "404",
+              responseTemplates: {
+                'application/json': '{"error": "Missing JWKS. Check that you have the correct application ID and then contact support."}',
+              },
+            },
+            {
+              statusCode: "500",
+              // Anything but a 2XX response
+              selectionPattern: "(1|3|4|5)\\d{2}",
+              responseTemplates: {
+                'application/json': '{}',
+              },
+            },
+          ],
+        },
+      }),
+      {
+        requestParameters: {
+          'method.request.path.applicationId': true,
+        },
+        methodResponses: [
+          {
+            statusCode: "200",
+            responseModels: {
+              'application/json': apigateway.Model.EMPTY_MODEL,
+            },
+          },
+          {
+            statusCode: "404",
+            responseModels: {
+              'application/json': apigateway.Model.EMPTY_MODEL,
+            },
+          },
+          {
+            statusCode: "500",
+            responseModels: {
+              'application/json': apigateway.Model.EMPTY_MODEL,
+            },
+          },
+        ],
+      },
+    );
+
+    /**************************************************************************
+     *
      * DELETE user
      *
      *************************************************************************/
@@ -296,7 +394,7 @@ export class Api extends Stack {
          path: '/',
          integrationHttpMethod: 'POST',
          options: {
-           credentialsRole: apiGatewayRole,
+           credentialsRole: snsApiGatewayRole,
            passthroughBehavior: apigateway.PassthroughBehavior.NEVER,
            requestParameters: {
              'integration.request.header.Content-Type': "'application/x-www-form-urlencoded'",
@@ -329,7 +427,7 @@ export class Api extends Stack {
        {
         ...defaultMethodOptions,
         authorizationType: apigateway.AuthorizationType.CUSTOM,
-        authorizer: api.authorizer,
+        authorizer: authorizer,
        },
      );
     /**************************************************************************
@@ -342,16 +440,19 @@ export class Api extends Stack {
       {
         camelCase: 'emailVerification',
         kebabCase: 'email-verification',
+        usesDdb: true,
         usesSes: true,
       },
       {
         camelCase: 'passwordReset',
         kebabCase: 'password-reset',
+        usesDdb: true,
         usesSes: true,
       },
       {
         camelCase: 'deleteUser',
         kebabCase: 'delete-user',
+        usesDdb: true,
       },
       {
         camelCase: 'applicationCreated',
@@ -384,8 +485,6 @@ export class Api extends Stack {
           layers,
         },
       );
-      primaryTable.grantFullAccess(lambdaFunction);
-      lambdaFunction.addEnvironment('PRIMARY_TABLE_NAME', primaryTable.tableName);
       snsTopic.addSubscription(new snsSub.LambdaSubscription(
         lambdaFunction,
         {
@@ -396,6 +495,12 @@ export class Api extends Stack {
           },
         }
       ));
+
+      if (name.usesDdb) {
+        primaryTable.grantFullAccess(lambdaFunction);
+        lambdaFunction.addEnvironment('PRIMARY_TABLE_NAME', primaryTable.tableName);
+      }
+
       if (name.usesSes) {
         lambdaFunction.role?.addToPrincipalPolicy(
           new iam.PolicyStatement({
@@ -424,6 +529,8 @@ export class Api extends Stack {
      *************************************************************************/
 
     const lambdasThatPublish = [
+      '/v1/applications/post',
+      '/v1/applications/{applicationId}/delete',
       '/v1/applications/{applicationId}/users/post',
       '/v1/applications/{applicationId}/users/verification/get',
     ];

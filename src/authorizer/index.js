@@ -35,7 +35,7 @@ function generatePolicy(principalId, apiStageArn, userId /* userData */) {
 }
 
 async function handler(event) {
-  const authorizationHeader = event.authorizationToken;
+  const authorizationHeader = event.headers.Authorization;
   const [, token] = authorizationHeader.split(' ');
 
   const { methodArn } = event;
@@ -46,7 +46,7 @@ async function handler(event) {
 
   try {
     const publicKey = await readFile(getPublicKeyPath(applicationId));
-    const publicKeyLike = await jose.importSPKI(publicKey, KEY_GENERATION_ALGORITHM)
+    const publicKeyLike = await jose.importSPKI(publicKey, KEY_GENERATION_ALGORITHM);
     const { payload } = await jose.jwtVerify(token, publicKeyLike);
     const { sub: userId } = payload;
 

@@ -18,7 +18,6 @@ async function logic(applicationId) {
     removeFile(getPublicKeyPath(applicationId)),
     removeFile(getPrivateKeyPath(applicationId)),
   ]);
-  return
 }
 
 module.exports = {

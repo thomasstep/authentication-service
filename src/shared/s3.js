@@ -23,8 +23,22 @@ async function saveFile(fileContents, path, contentType = 'text/plain') {
     Body: fileContents,
   };
   const command = new PutObjectCommand(input);
-  const response = await client.send(command);
+  const response = await s3Client.send(command);
   logger.debug(response);
+}
+
+// Create a helper function to convert a ReadableStream to a string.
+function streamToString(stream) {
+  return new Promise((resolve, reject) => {
+    const chunks = [];
+    stream.on("data", (chunk) => {
+      chunks.push(chunk);
+    });
+    stream.on("error", reject);
+    stream.on("end", () => {
+      resolve(chunks.join(''))
+    });
+  });
 }
 
 async function readFile(path) {
@@ -33,9 +47,10 @@ async function readFile(path) {
     Key: path,
   };
   const command = new GetObjectCommand(input);
-  const response = await client.send(command);
-  logger.debug(response);
-  return response;
+  const response = await s3Client.send(command);
+  const fileContents = await streamToString(response.Body);
+  logger.debug(fileContents);
+  return fileContents;
 }
 
 async function removeFile(path) {
@@ -44,7 +59,7 @@ async function removeFile(path) {
     Key: path,
   };
   const command = new DeleteObjectCommand(input);
-  const response = await client.send(command);
+  const response = await s3Client.send(command);
   logger.debug(response);
   return response;
 }
