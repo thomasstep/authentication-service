@@ -1,19 +1,35 @@
 {
   "name": "authentication-service",
-  "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
+  "version": "0.1.0",
+  "bin": {
+    "authentication-service": "bin/authentication-service.js"
+  },
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "build": "tsc",
+    "watch": "tsc -w",
+    "test": "jest",
+    "cdk": "cdk",
+    "lint": "eslint --ext .js --ignore-pattern node_modules src/ asyncSrc/ syntheticsSrc/"
   },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/thomasstep/authentication-service.git"
+  "devDependencies": {
+    "@types/jest": "^27.5.0",
+    "@types/node": "10.17.27",
+    "@types/prettier": "2.6.0",
+    "@typescript-eslint/eslint-plugin": "^5.29.0",
+    "aws-cdk": "2.27.0",
+    "eslint": "^8.17.0",
+    "eslint-config-airbnb-base": "^15.0.0",
+    "eslint-plugin-import": "^2.26.0",
+    "jest": "^27.5.1",
+    "ts-jest": "^27.1.4",
+    "ts-node": "^10.7.0",
+    "typescript": "~3.9.7"
   },
-  "author": "Thomas Step",
-  "license": "ISC",
-  "bugs": {
-    "url": "https://github.com/thomasstep/authentication-service/issues"
-  },
-  "homepage": "https://github.com/thomasstep/authentication-service#readme"
+  "dependencies": {
+    "@typescript-eslint/parser": "^5.29.0",
+    "aws-cdk-lib": "2.27.0",
+    "constructs": "^10.0.0",
+    "crow-api": "^2.4.0",
+    "source-map-support": "^0.5.21"
+  }
 }
