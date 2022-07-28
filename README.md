@@ -194,7 +194,3 @@ Configurage parts: `iss`, `aud` (will not be present if not configured)
 - `deleteUser` is emitted for the main purpose of deleting a user.
 - `applicationCreated` is emitted after an application has been created. Handles actions such as creating and storing public and private RSA keys.
 - `applicationDeleted` is emitted after an application has been deleted. Handles actions such as deleting public and private RSA keys.
-
-### Next Time
-- Finish code for async application creation of the jwks
-  - https://thomasstep.com/blog/a-guide-to-using-jwt-in-javascript#creating-a-jwks

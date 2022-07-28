@@ -15,6 +15,12 @@ new Api(app, 'authentication-service-api-dev', {
   crowApiProps: {
     apiGatewayName: 'authentication-service-dev',
     createApiKey: true,
+    apiGatewayConfiguration: {
+      defaultCorsPreflightOptions: {
+        allowOrigins: ['*'],
+        allowCredentials: true,
+      },
+    },
     lambdaIntegrationOptions: {
       '/v1/applications/{applicationId}/users/verification/get': {
         requestParameters: {
