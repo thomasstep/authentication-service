@@ -43,6 +43,7 @@ const CONSTANTS = {
   CONFLICT_STATUS_CODE: 409,
   SERVER_ERROR_STATUS_CODE: 500,
   // Misc
+  corsAllowOriginHeader: '*', // Can be overridden
   KEY_GENERATION_ALGORITHM: 'RS256',
   LOGGER_LEVEL: process.env.LOGGER_LEVEL || 'debug',
 };
@@ -52,6 +53,6 @@ const CONSTANTS = {
  */
 
 module.exports = {
-  ...config,
   ...CONSTANTS,
+  ...config,
 };
