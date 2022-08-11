@@ -242,7 +242,7 @@ export class Api extends Stack {
             'application/json': apigateway.Model.EMPTY_MODEL,
           },
           responseParameters: {
-            'method.response.header.Access-Control-Allow-Origin': config.corsAllowOriginHeader,
+            'method.response.header.Access-Control-Allow-Origin': true,
             'method.response.header.Access-Control-Allow-Credentials': true,
           },
         },
@@ -252,7 +252,7 @@ export class Api extends Stack {
             'application/json': apigateway.Model.EMPTY_MODEL,
           },
           responseParameters: {
-            'method.response.header.Access-Control-Allow-Origin': config.corsAllowOriginHeader,
+            'method.response.header.Access-Control-Allow-Origin': true,
             'method.response.header.Access-Control-Allow-Credentials': true,
           },
         },
@@ -294,6 +294,10 @@ export class Api extends Stack {
               responseTemplates: {
                 'application/json': '{}',
               },
+              responseParameters: {
+                'method.response.header.Access-Control-Allow-Origin': "'*'",
+                'method.response.header.Access-Control-Allow-Credentials': "'true'",
+              },
             },
             {
               statusCode: "500",
@@ -301,6 +305,10 @@ export class Api extends Stack {
               selectionPattern: "(1|3|4|5)\\d{2}",
               responseTemplates: {
                 'application/json': '{}',
+              },
+              responseParameters: {
+                'method.response.header.Access-Control-Allow-Origin': "'*'",
+                'method.response.header.Access-Control-Allow-Credentials': "'true'",
               },
             },
           ],
@@ -339,12 +347,20 @@ export class Api extends Stack {
           integrationResponses: [
             {
               statusCode: "200",
+              responseParameters: {
+                'method.response.header.Access-Control-Allow-Origin': "'*'",
+                'method.response.header.Access-Control-Allow-Credentials': "'true'",
+              },
             },
             {
               statusCode: "404",
               selectionPattern: "404",
               responseTemplates: {
                 'application/json': '{"error": "Missing JWKS. Check that you have the correct application ID and then contact support."}',
+              },
+              responseParameters: {
+                'method.response.header.Access-Control-Allow-Origin': "'*'",
+                'method.response.header.Access-Control-Allow-Credentials': "'true'",
               },
             },
             {
@@ -353,6 +369,10 @@ export class Api extends Stack {
               selectionPattern: "(1|3|4|5)\\d{2}",
               responseTemplates: {
                 'application/json': '{}',
+              },
+              responseParameters: {
+                'method.response.header.Access-Control-Allow-Origin': "'*'",
+                'method.response.header.Access-Control-Allow-Credentials': "'true'",
               },
             },
           ],
@@ -369,7 +389,7 @@ export class Api extends Stack {
               'application/json': apigateway.Model.EMPTY_MODEL,
             },
             responseParameters: {
-              'method.response.header.Access-Control-Allow-Origin': config.corsAllowOriginHeader,
+              'method.response.header.Access-Control-Allow-Origin': true,
               'method.response.header.Access-Control-Allow-Credentials': true,
             },
           },
@@ -379,7 +399,7 @@ export class Api extends Stack {
               'application/json': apigateway.Model.EMPTY_MODEL,
             },
             responseParameters: {
-              'method.response.header.Access-Control-Allow-Origin': config.corsAllowOriginHeader,
+              'method.response.header.Access-Control-Allow-Origin': true,
               'method.response.header.Access-Control-Allow-Credentials': true,
             },
           },
@@ -389,7 +409,7 @@ export class Api extends Stack {
               'application/json': apigateway.Model.EMPTY_MODEL,
             },
             responseParameters: {
-              'method.response.header.Access-Control-Allow-Origin': config.corsAllowOriginHeader,
+              'method.response.header.Access-Control-Allow-Origin': true,
               'method.response.header.Access-Control-Allow-Credentials': true,
             },
           },
@@ -432,6 +452,10 @@ export class Api extends Stack {
                responseTemplates: {
                  'application/json': '{}',
                },
+               responseParameters: {
+                 'method.response.header.Access-Control-Allow-Origin': "'*'",
+                 'method.response.header.Access-Control-Allow-Credentials': "'true'",
+               },
              },
              {
                statusCode: "500",
@@ -439,6 +463,10 @@ export class Api extends Stack {
                selectionPattern: "(1|3|4|5)\\d{2}",
                responseTemplates: {
                  'application/json': '{}',
+               },
+               responseParameters: {
+                 'method.response.header.Access-Control-Allow-Origin': "'*'",
+                 'method.response.header.Access-Control-Allow-Credentials': "'true'",
                },
              },
            ],

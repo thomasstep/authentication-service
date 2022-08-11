@@ -3,6 +3,13 @@
 # Getting Started
 
 ```sh
+cp config.json.example config.json
+# Fill in appropriate config
+cd src/shared
+# I link the config files together so I only need to keep track of the top level one
+# I am open to a better way of doing this
+ln -s ../../config.json
+cd ../..
 # Install shared directory packages
 # Make sure this is run on a Linux machine or bcrypt will throw errors whenever it is run in Lambda
 cd src/shared
@@ -194,3 +201,7 @@ Configurage parts: `iss`, `aud` (will not be present if not configured)
 - `deleteUser` is emitted for the main purpose of deleting a user.
 - `applicationCreated` is emitted after an application has been created. Handles actions such as creating and storing public and private RSA keys.
 - `applicationDeleted` is emitted after an application has been deleted. Handles actions such as deleting public and private RSA keys.
+
+### TODO
+
+- Write monitoring tests

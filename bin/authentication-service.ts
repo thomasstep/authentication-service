@@ -7,13 +7,14 @@ import { Bucket } from '../lib/authentication-service-buckets';
 import { Api } from '../lib/authentication-service-api';
 
 const app = new cdk.App();
-const devTables = new Tables(app, 'authentication-service-tables-dev', {});
-const devBuckets = new Bucket(app, 'authentication-service-buckets-dev', {});
-new Api(app, 'authentication-service-api-dev', {
-  primaryTable: devTables.primaryTable,
-  primaryBucket: devBuckets.primaryBucket,
+
+const tables = new Tables(app, 'authentication-service-tables', {});
+const buckets = new Bucket(app, 'authentication-service-buckets', {});
+new Api(app, 'authentication-service-api', {
+  primaryTable: tables.primaryTable,
+  primaryBucket: buckets.primaryBucket,
   crowApiProps: {
-    apiGatewayName: 'authentication-service-dev',
+    apiGatewayName: 'authentication-service',
     createApiKey: true,
     apiGatewayConfiguration: {
       defaultCorsPreflightOptions: {

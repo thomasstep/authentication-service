@@ -7,6 +7,10 @@ node_modules
 .cdk.staging
 cdk.out
 
+# Config files
+config.json
+src/shared/config.json
+
 !.eslintrc.js
 !src/**/*.js
 !asyncSrc/**/*.js
