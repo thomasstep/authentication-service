@@ -28,6 +28,11 @@ const {
 
 async function logic(applicationId, email, password) {
   const emailData = await readEmailSignIn(applicationId, email);
+  // TODO check user
+  // if (!emailData) {
+  //   throw new Error('User does not exist.');
+  // }
+
   const isValidPassword = compare(password, emailData.passwordHash);
   if (!isValidPassword) {
     throw new UnauthorizedError('Wrong password.');
