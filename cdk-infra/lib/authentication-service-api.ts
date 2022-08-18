@@ -12,54 +12,85 @@ import * as s3 from 'aws-cdk-lib/aws-s3';
 import * as sns from 'aws-cdk-lib/aws-sns';
 import * as snsSub from 'aws-cdk-lib/aws-sns-subscriptions';
 import * as sqs from 'aws-cdk-lib/aws-sqs';
-import { CrowApi, CrowApiProps, LambdasByPath } from 'crow-api';
 
-const filePath = path.join(process.cwd(), 'config.json');
+const filePath = path.join(process.cwd(), '../config.json');
 const contents = fs.readFileSync(filePath, 'utf8');
 const config = JSON.parse(contents);
 
+const goSrcDirectory = '../../gosrc';
+const ddbEnvironmentVariableName = 'PRIMARY_TABLE';
 const s3EnvironmentVariableName = 'PRIMARY_BUCKET_NAME';
+const snsEnvironmentVariableName = 'PRIMARY_SNS_TOPIC';
 
-function connectDdbToLambdas(table: dynamodb.Table, apiLambdas: LambdasByPath, paths: string[], envVarName: string) {
-  paths.forEach((lambdaPath) => {
-    const lambda = apiLambdas[lambdaPath];
-    table.grantFullAccess(lambda);
-    lambda.addEnvironment(envVarName, table.tableName);
+function connectDdbToLambdas(table: dynamodb.Table, lambdas: LambdasObject, names: string[], envVarName: string) {
+  names.forEach((name) => {
+    const lambda = lambdas[name].function;
+    if (lambda) {
+      table.grantFullAccess(lambda);
+      lambda.addEnvironment(envVarName, table.tableName);
+    }
   })
 }
 
-function grantReadS3ToLambdas(bucket: s3.Bucket, apiLambdas: LambdasByPath, paths: string[], envVarName: string) {
-  paths.forEach((lambdaPath) => {
-    const lambda = apiLambdas[lambdaPath];
-    bucket.grantRead(lambda);
-    lambda.addEnvironment(envVarName, bucket.bucketName);
+function grantReadS3ToLambdas(bucket: s3.Bucket, apiLambdas: LambdasObject, names: string[], envVarName: string) {
+  names.forEach((name) => {
+    const lambda = apiLambdas[name].function;
+    if (lambda) {
+      bucket.grantRead(lambda);
+      lambda.addEnvironment(envVarName, bucket.bucketName);
+    }
   })
+}
+
+interface LambdaConfig {
+  lambdaConfig: lambda.FunctionProps,
+  methodConfig: apigateway.MethodOptions,
+  verb: string,
+  resource: apigateway.Resource,
+  function?: lambda.Function,
+  method?: apigateway.Method,
+}
+
+interface LambdasObject {
+  [name: string]: LambdaConfig
 }
 
 interface ISiteAnalyticsStackProps extends StackProps {
   primaryTable: dynamodb.Table,
   primaryBucket: s3.Bucket,
-  crowApiProps: CrowApiProps,
 }
 
 export class Api extends Stack {
-  public api!: CrowApi;
   constructor(scope: Construct, id: string, props: ISiteAnalyticsStackProps) {
     super(scope, id, props);
 
     const {
       primaryTable,
       primaryBucket,
-      crowApiProps,
     } = props;
+
+    function baseLambdaConfig(target: string) {
+      return {
+        handler: 'main', // Because the build output is called main
+        runtime: lambda.Runtime.GO_1_X,
+        logRetention: logs.RetentionDays.ONE_WEEK,
+        code: lambda.Code.fromAsset(path.join(__dirname, goSrcDirectory), {
+          bundling: {
+            image: lambda.Runtime.GO_1_X.bundlingImage,
+            user: "root",
+            command: [
+              'bash', '-c',
+              `GOOS=linux GOARCH=amd64 go build -o /asset-output/main ./cmd/${target}`
+            ]
+          },
+        }),
+      }
+    }
 
     const snsTopic = new sns.Topic(this, 'topic');
 
     const authorizerLambda = new lambda.Function(this, 'request-authorizer-lambda', {
-        runtime: lambda.Runtime.NODEJS_14_X,
-        code: lambda.Code.fromAsset('src/authorizer'),
-        handler: 'index.handler',
-        logRetention: logs.RetentionDays.ONE_WEEK,
+        ...baseLambdaConfig('lambdaAuthorizer'),
     });
     const authorizer = new apigateway.RequestAuthorizer(
       this,
@@ -70,105 +101,293 @@ export class Api extends Stack {
         identitySources: [apigateway.IdentitySource.header('Authorization')]
       },
     );
-    const authorizationConfig = {
-      authorizationType: apigateway.AuthorizationType.CUSTOM,
-      authorizer,
-    };
-    const finalCrowApiProps = {
-      ...crowApiProps,
-      methodConfigurations: {
-        '/v1/applications/post': {
-          apiKeyRequired: true,
+
+    // API Gateway log group
+    const gatewayLogGroup = new logs.LogGroup(this, 'api-access-logs', {
+      retention: logs.RetentionDays.ONE_WEEK,
+    });
+
+    // The API Gateway itself
+    const restApi = new apigateway.RestApi(this, 'authentication-service', {
+      deploy: true,
+      deployOptions: {
+        loggingLevel: apigateway.MethodLoggingLevel.ERROR,
+        accessLogDestination: new apigateway.LogGroupLogDestination(gatewayLogGroup),
+      },
+      endpointConfiguration: {
+        types: [apigateway.EndpointType.REGIONAL],
+      },
+      apiKeySourceType: apigateway.ApiKeySourceType.HEADER,
+      defaultCorsPreflightOptions: {
+        allowOrigins: ['*'],
+        allowCredentials: true,
+      },
+    });
+
+    // API key
+    const apiKey = restApi.addApiKey('api-key');
+    const usagePlan = new apigateway.UsagePlan(this, 'usage-plan', {
+      throttle: {
+        burstLimit: 5000,
+        rateLimit: 10000,
+      },
+      apiStages: [
+        {
+          api: restApi,
+          stage: restApi.deploymentStage,
         },
-        '/v1/applications/{applicationId}/get': {
-          apiKeyRequired: true,
-        },
-        '/v1/applications/{applicationId}/put': {
-          apiKeyRequired: true,
-        },
-        '/v1/applications/{applicationId}/delete': {
-          apiKeyRequired: true,
-        },
-        '/v1/applications/{applicationId}/users/post': {
-          requestModels: {
-            'application/json': 'createUser',
+      ],
+    });
+    usagePlan.addApiKey(apiKey);
+
+    // Models and request validators
+    const models: apigateway.ModelOptions[] = [
+      {
+        modelName: 'createUser',
+        schema: {
+          schema: apigateway.JsonSchemaVersion.DRAFT4,
+          title: 'createUser',
+          type: apigateway.JsonSchemaType.OBJECT,
+          required: ['email', 'password'],
+          properties: {
+            email: {
+              type: apigateway.JsonSchemaType.STRING,
+              format: 'idn-email',
+            },
+            password: {
+              type: apigateway.JsonSchemaType.STRING,
+            },
           },
-          requestValidator: 'validateBody',
+          additionalProperties: false,
         },
-        '/v1/applications/{applicationId}/users/verification/get': {
+      },
+      {
+        modelName: 'updatePassword',
+        schema: {
+          schema: apigateway.JsonSchemaVersion.DRAFT4,
+          title: 'updatePassword',
+          type: apigateway.JsonSchemaType.OBJECT,
+          required: ['token', 'password'],
+          properties: {
+            token: {
+              type: apigateway.JsonSchemaType.STRING,
+            },
+            password: {
+              type: apigateway.JsonSchemaType.STRING,
+            },
+          },
+          additionalProperties: false,
+        },
+      },
+    ];
+    const requestValidators: apigateway.RequestValidatorOptions[] = [
+      {
+        requestValidatorName: 'validateBody',
+        validateRequestBody: true,
+      },
+      {
+        requestValidatorName: 'validateParams',
+        validateRequestParameters: true,
+      },
+    ];
+    const createdModels: { [modelName: string]: apigateway.IModel } = {};
+    models.forEach((model) => {
+      // modelName is used as ID and can now be used for referencing model in method options
+      if (model.modelName) {
+        createdModels[model.modelName] = restApi.addModel(model.modelName, model);
+      }
+    });
+    const createdRequestValidators: { [requestValidatorsName: string]: apigateway.IRequestValidator } = {};
+    requestValidators.forEach((requestValidator) => {
+      // requestValidatorName is used as ID and can now be used for referencing model in method options
+      if (requestValidator.requestValidatorName) {
+        createdRequestValidators[requestValidator.requestValidatorName] = restApi.addRequestValidator(requestValidator.requestValidatorName, requestValidator);
+      }
+    });
+
+    // ************************************************************************
+    // Build API paths
+    // ************************************************************************
+
+    const v1Resource = restApi.root.addResource('v1');
+    const applicationsResource = v1Resource.addResource('applications');
+    const applicationIdResource = applicationsResource.addResource('{applicationId}');
+    const jwksResource = applicationIdResource.addResource('jwks.json');
+    const usersResource = applicationIdResource.addResource('users');
+    const meResource = usersResource.addResource('me');
+    const tokenResource = usersResource.addResource('token');
+    const verificationResource = usersResource.addResource('verification');
+    const passwordResource = usersResource.addResource('password');
+    const resetResource = passwordResource.addResource('reset');
+
+    // ************************************************************************
+    // Build Lambdas and their methods
+    // ************************************************************************
+
+    const lambdas: LambdasObject = {
+      createApplication: {
+        lambdaConfig: {
+          ...baseLambdaConfig('createApplication'),
+        },
+        methodConfig: {
+          apiKeyRequired: true,
+        },
+        verb: 'POST',
+        resource: applicationsResource,
+      },
+      readApplication: {
+        lambdaConfig: {
+          ...baseLambdaConfig('readApplication'),
+        },
+        methodConfig: {
+          apiKeyRequired: true,
+        },
+        verb: 'GET',
+        resource: applicationIdResource,
+      },
+      updateApplication: {
+        lambdaConfig: {
+          ...baseLambdaConfig('updateApplication'),
+        },
+        methodConfig: {
+          apiKeyRequired: true,
+        },
+        verb: 'PUT',
+        resource: applicationIdResource,
+      },
+      deleteApplication: {
+        lambdaConfig: {
+          ...baseLambdaConfig('deleteApplication'),
+        },
+        methodConfig: {
+          apiKeyRequired: true,
+        },
+        verb: 'DELETE',
+        resource: applicationIdResource,
+      },
+      createUser: {
+        lambdaConfig: {
+          ...baseLambdaConfig('createUser'),
+        },
+        methodConfig: {
+          requestModels: {
+            'application/json': createdModels['createUser'],
+          },
+          requestValidator: createdRequestValidators['validateBody'],
+        },
+        verb: 'POST',
+        resource: usersResource,
+      },
+      verifyUser: {
+        lambdaConfig: {
+          ...baseLambdaConfig('verifyUser'),
+        },
+        methodConfig: {
           requestParameters: {
             'method.request.querystring.token': true,
           },
-          requestValidator: 'validateParams',
+          requestValidator: createdRequestValidators['validateParams'],
         },
-        '/v1/applications/{applicationId}/users/token/get': {
+        verb: 'GET',
+        resource: verificationResource,
+      },
+      requestUserToken: {
+        lambdaConfig: {
+          ...baseLambdaConfig('requestUserToken'),
+        },
+        methodConfig: {
           requestParameters: {
             'method.request.querystring.refresh-token': false,
             'method.request.querystring.email': false,
             'method.request.querystring.password': false,
           },
-          requestValidator: 'validateParams',
+          requestValidator: createdRequestValidators['validateParams'],
         },
-        // Defined below
-        // '/v1/applications/{applicationId}/users/password/reset/get': {
-        // },
-        '/v1/applications/{applicationId}/users/password/put': {
+        verb: 'GET',
+        resource: tokenResource,
+      },
+      updatePassword: {
+        lambdaConfig: {
+          ...baseLambdaConfig('updatePassword'),
+        },
+        methodConfig: {
           requestModels: {
-            'application/json': 'updatePassword',
+            'application/json': createdModels['updatePassword'],
           },
-          requestValidator: 'validateBody',
+          requestValidator: createdRequestValidators['validateBody'],
         },
-        '/v1/applications/{applicationId}/users/me/get': {
-          ...authorizationConfig,
+        verb: 'PUT',
+        resource: passwordResource,
+      },
+      readCurrentUser: {
+        lambdaConfig: {
+          ...baseLambdaConfig('readCurrentUser'),
         },
-        '/v1/applications/{applicationId}/users/me/put': {
-          ...authorizationConfig,
+        methodConfig: {
+          authorizationType: apigateway.AuthorizationType.CUSTOM,
+          authorizer,
         },
-        '/v1/applications/{applicationId}/users/me/delete': {
-          ...authorizationConfig,
+        verb: 'POST',
+        resource: meResource,
+      },
+      updateCurrentUser: {
+        lambdaConfig: {
+          ...baseLambdaConfig('updateCurrentUser'),
         },
+        methodConfig: {
+          authorizationType: apigateway.AuthorizationType.CUSTOM,
+          authorizer,
+        },
+        verb: 'PUT',
+        resource: meResource,
       },
     };
 
-    const api = new CrowApi(this, 'api', {
-      ...finalCrowApiProps,
+    Object.entries(lambdas).forEach(([name, config]) => {
+      const lambdaFunction = new lambda.Function(this, name, config.lambdaConfig);
+      const method = config.resource.addMethod(
+        config.verb,
+        new apigateway.LambdaIntegration(lambdaFunction, {}),
+        config.methodConfig,
+      );
+      lambdas[name].function = lambdaFunction;
+      lambdas[name].method = method;
     });
-    this.api = api;
 
     connectDdbToLambdas(
       primaryTable,
-      api.lambdaFunctions,
+      lambdas,
       [
-        '/v1/applications/post',
-        '/v1/applications/{applicationId}/get',
-        '/v1/applications/{applicationId}/put',
-        '/v1/applications/{applicationId}/delete',
-        '/v1/applications/{applicationId}/users/post',
-        '/v1/applications/{applicationId}/users/verification/get',
-        '/v1/applications/{applicationId}/users/token/get',
-        // '/v1/applications/{applicationId}/users/password/reset/get',
-        '/v1/applications/{applicationId}/users/password/put',
-        '/v1/applications/{applicationId}/users/me/get',
-        '/v1/applications/{applicationId}/users/me/put',
-        // '/v1/applications/{applicationId}/users/me/delete',
+        'createApplication',
+        'readApplication',
+        'updateApplication',
+        'deleteApplication',
+        'createUser',
+        'verifyUser',
+        'requestUserToken',
+        // 'requestResetPassword',
+        'updatePassword',
+        'readCurrentUser',
+        'updateCurrentUser',
+        // 'deleteCurrentUser',
       ],
-      'PRIMARY_TABLE_NAME',
+      ddbEnvironmentVariableName,
     );
 
     grantReadS3ToLambdas(
       primaryBucket,
-      api.lambdaFunctions,
+      lambdas,
       [
-        '/v1/applications/{applicationId}/users/token/get',
+        'requestUserToken',
       ],
       s3EnvironmentVariableName,
     );
 
-    primaryBucket.grantRead(authorizerLambda);
-    authorizerLambda.addEnvironment(s3EnvironmentVariableName, primaryBucket.bucketName);
-    if (api.lambdaLayer) {
-      authorizerLambda.addLayers(api.lambdaLayer);
-    }
+    // primaryBucket.grantRead(authorizerLambda);
+    // authorizerLambda.addEnvironment(s3EnvironmentVariableName, primaryBucket.bucketName);
+    // if (api.lambdaLayer) {
+    //   authorizerLambda.addLayers(api.lambdaLayer);
+    // }
 
     /**************************************************************************
      *
@@ -177,52 +396,6 @@ export class Api extends Stack {
      * then I can not update the layer
      *
      *************************************************************************/
-
-    /**************************************************************************
-     *
-     * Setup common resources
-     *
-     *************************************************************************/
-
-    const v1Resource = api.gateway.root.getResource('v1');
-    if (!v1Resource) {
-      throw new Error('v1 resource cannot be found');
-    }
-
-    const applicationsResource = v1Resource.getResource('applications');
-    if (!applicationsResource) {
-      throw new Error('applications resource cannot be found');
-    }
-
-    const applicationIdResource = applicationsResource.getResource('{applicationId}');
-    if (!applicationIdResource) {
-      throw new Error('application by ID resource cannot be found');
-    }
-
-    const jwksResource = applicationIdResource.getResource('jwks.json');
-    if (!jwksResource) {
-      throw new Error('JWKS resource cannot be found');
-    }
-
-    const usersResource = applicationIdResource.getResource('users');
-    if (!usersResource) {
-      throw new Error('users resource cannot be found');
-    }
-
-    const meResource = usersResource.getResource('me');
-    if (!meResource) {
-      throw new Error('me resource cannot be found');
-    }
-
-    const passwordResource = usersResource.getResource('password');
-    if (!passwordResource) {
-      throw new Error('password resource cannot be found');
-    }
-
-    const resetResource = passwordResource.getResource('reset');
-    if (!resetResource) {
-      throw new Error('reset resource cannot be found');
-    }
 
     const snsApiGatewayRole = new iam.Role(this, 'sns-integration-role', {
       assumedBy: new iam.ServicePrincipal('apigateway.amazonaws.com')
@@ -319,7 +492,7 @@ export class Api extends Stack {
         requestParameters: {
           'method.request.querystring.email': true,
         },
-        requestValidator: api.requestValidators.validateParams,
+        requestValidator: createdRequestValidators['validateParams'],
       },
     );
 
@@ -486,14 +659,14 @@ export class Api extends Stack {
 
     const asyncLambdaNames = [
       {
-        camelCase: 'emailVerification',
-        kebabCase: 'email-verification',
+        camelCase: 'sendEmailVerification',
+        kebabCase: 'send-email-verification',
         usesDdb: true,
         usesSes: true,
       },
       {
-        camelCase: 'passwordReset',
-        kebabCase: 'password-reset',
+        camelCase: 'requestPasswordReset',
+        kebabCase: 'request-password-reset',
         usesDdb: true,
         usesSes: true,
       },
@@ -515,22 +688,13 @@ export class Api extends Stack {
     ];
 
     asyncLambdaNames.forEach((name) => {
-      let layers: lambda.ILayerVersion[] | undefined;
-      if (api.lambdaLayer) {
-        layers = [api.lambdaLayer];
-      }
-
       const dlq = new sqs.Queue(this, `${name.kebabCase}-dlq`, {});
       const lambdaFunction = new lambda.Function(
         this,
         `${name.kebabCase}-lambda`,
         {
-          runtime: lambda.Runtime.NODEJS_14_X,
-          code: lambda.Code.fromAsset(`asyncSrc/${name.camelCase}`),
-          handler: 'index.handler',
-          logRetention: logs.RetentionDays.ONE_WEEK,
+          ...baseLambdaConfig(name.camelCase),
           deadLetterQueue: dlq,
-          layers,
         },
       );
       snsTopic.addSubscription(new snsSub.LambdaSubscription(
@@ -577,15 +741,17 @@ export class Api extends Stack {
      *************************************************************************/
 
     const lambdasThatPublish = [
-      '/v1/applications/post',
-      '/v1/applications/{applicationId}/delete',
-      '/v1/applications/{applicationId}/users/post',
-      '/v1/applications/{applicationId}/users/verification/get',
+      'createApplication',
+      'deleteApplication',
+      'createUser',
+      'verifyUser',
     ];
     lambdasThatPublish.forEach((lambdaName) => {
-      const lambda = api.lambdaFunctions[lambdaName];
-      snsTopic.grantPublish(lambda);
-      lambda.addEnvironment('PRIMARY_SNS_TOPIC', snsTopic.topicArn);
+      const lambda = lambdas[lambdaName].function;
+      if (lambda) {
+        snsTopic.grantPublish(lambda);
+        lambda.addEnvironment(snsEnvironmentVariableName, snsTopic.topicArn);
+      }
     })
   }
 }
