@@ -5,11 +5,11 @@
 ```sh
 cp config.json.example config.json
 # Fill in appropriate config
-cd src/shared
+cd gosrc/internal/common
 # I link the config files together so I only need to keep track of the top level one
 # I am open to a better way of doing this
-ln -s ../../config.json
-cd ../..
+ln -s ../../../config.json
+cd ../../..
 # Install shared directory packages
 # Make sure this is run on a Linux machine or bcrypt will throw errors whenever it is run in Lambda
 cd src/shared
