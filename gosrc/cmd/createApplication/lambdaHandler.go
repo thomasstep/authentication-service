@@ -27,7 +27,7 @@ func lambdaAdapter(ctx context.Context, request events.APIGatewayProxyRequest) (
 	}
 
 	return events.APIGatewayProxyResponse{
-		Body: string(jsonBody),
+		Body:       string(jsonBody),
 		StatusCode: 200,
 	}, err
 }

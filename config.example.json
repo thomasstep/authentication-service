@@ -1,7 +1,0 @@
-{
-  "corsAllowOriginHeader": "*",
-  "tokenIssuer": "https://auth.thomasstep.com",
-  "tokenExpirationTime": "6h",
-  "sourceEmailAddress": "thomas@thomasstep.com",
-  "sesEmailIdentityArn": "arn:aws:ses:us-east-1:712578128737:identity/thomas@thomasstep.com"
-}

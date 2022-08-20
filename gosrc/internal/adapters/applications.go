@@ -3,8 +3,8 @@ package adapters
 import (
 	"context"
 
-	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
 	"github.com/aws/aws-sdk-go-v2/feature/dynamodb/attributevalue"
+	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
 
 	"github.com/thomasstep/authentication-service/internal/common"
 )
@@ -15,43 +15,44 @@ const ACTIVE = "active"
 const SUSPENDED = "suspended"
 
 type ApplicationItem struct {
-	Id string `json:id`
-	SecondaryId string `json:secondaryId`
-	ApplicationState string `json:applicationState`
-	EmailFromName string `json:emailFromName`
-	ResetPasswordUrl string `json:resetPasswordUrl`
-	VerificationUrl string `json:verificationUrl`
-	UserCount int `json:userCount`
-	Created string `json:created`
+	Id               string `dynamodbav:"id"`
+	SecondaryId      string `dynamodbav:"secondaryId"`
+	ApplicationState string `dynamodbav:"applicationState"`
+	EmailFromName    string `dynamodbav:"emailFromName"`
+	ResetPasswordUrl string `dynamodbav:"resetPasswordUrl"`
+	VerificationUrl  string `dynamodbav:"verificationUrl"`
+	UserCount        int    `dynamodbav:"userCount"`
+	Created          string `dynamodbav:"created"`
 }
 
 func CreateApplication() (string, error) {
 	ddbClient := GetDynamodbClient()
-	ddbClient.PutItem(context.TODO())
+
 	applicationId := common.GenerateToken()
+	logger.Info(applicationId)
 	item := ApplicationItem{
-		Id: applicationId,
-		SecondaryId: "application",
+		Id:               applicationId,
+		SecondaryId:      "application",
 		ApplicationState: ACTIVE,
-		EmailFromName: "",
+		EmailFromName:    "",
 		ResetPasswordUrl: "",
-		VerificationUrl: "",
-		UserCount: 0,
-		Created: common.GetIsoString(),
+		VerificationUrl:  "",
+		UserCount:        0,
+		Created:          common.GetIsoString(),
 	}
-	av, err := attributevalue.MarshalMap(item)
-	if err != nil {
+	av, marshalErr := attributevalue.MarshalMap(item)
+	if marshalErr != nil {
 		logger.Error("Failed to marshal item")
-		return "", err
+		return "", marshalErr
 	}
 
-	_, err = ddbClient.PutItem(context.TODO(), &dynamodb.PutItemInput{
-		TableName: aws.String(myTableName),
-		Item: av,
+	_, putItemErr := ddbClient.PutItem(context.TODO(), &dynamodb.PutItemInput{
+		TableName: &configs.PrimaryTableName,
+		Item:      av,
 	})
-	if err != nil {
+	if putItemErr != nil {
 		logger.Error("Failed to put item")
-		return "", err
+		return "", putItemErr
 	}
 
 	return applicationId, nil

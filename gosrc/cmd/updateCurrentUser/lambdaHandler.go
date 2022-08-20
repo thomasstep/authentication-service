@@ -9,7 +9,7 @@ import (
 
 func handleRequest(ctx context.Context, event events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
 	return events.APIGatewayProxyResponse{
-		Body: "{\"hello\":\"world\"}",
+		Body:       "{\"hello\":\"world\"}",
 		StatusCode: 200,
 	}, nil
 }

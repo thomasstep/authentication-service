@@ -4,32 +4,41 @@ import (
 	"context"
 	"encoding/json"
 
+	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/sns"
+	"github.com/aws/aws-sdk-go-v2/service/sns/types"
 )
 
 type ApplicationCreatedEvent struct {
-	ApplicationId string `json:applicationId`
+	ApplicationId string `json:"applicationId"`
 }
 
-func EmitApplicationCreated(applicationId string) (error) {
+func EmitApplicationCreated(applicationId string) error {
 	snsClient := GetSnsClient()
-	message, marshalErr := json.Marshal(&ApplicationCreatedEvent{
+
+	messageBytes, marshalErr := json.Marshal(&ApplicationCreatedEvent{
 		ApplicationId: applicationId,
 	})
 	if marshalErr != nil {
 		return marshalErr
 	}
 
+	message := string(messageBytes)
+	messageAttributes := map[string]types.MessageAttributeValue{
+		"operation": types.MessageAttributeValue{
+			DataType:    aws.String("String"),
+			StringValue: aws.String("applicationCreated"),
+		},
+	}
+
 	_, publishErr := snsClient.Publish(context.TODO(), &sns.PublishInput{
-		MessageAttributes: {
-      "operation": {
-        DataType: "String",
-        StringValue: "applicationCreated",
-      },
-    },
-    Message: message,
+		TopicArn:          aws.String(configs.PrimaryTopicArn),
+		MessageAttributes: messageAttributes,
+		Message:           &message,
 	})
 	if publishErr != nil {
 		return publishErr
 	}
+
+	return nil
 }

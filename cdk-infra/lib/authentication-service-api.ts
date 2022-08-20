@@ -13,14 +13,14 @@ import * as sns from 'aws-cdk-lib/aws-sns';
 import * as snsSub from 'aws-cdk-lib/aws-sns-subscriptions';
 import * as sqs from 'aws-cdk-lib/aws-sqs';
 
-const filePath = path.join(process.cwd(), '../config.json');
+const filePath = path.join(process.cwd(), 'config.json');
 const contents = fs.readFileSync(filePath, 'utf8');
 const config = JSON.parse(contents);
 
 const goSrcDirectory = '../../gosrc';
-const ddbEnvironmentVariableName = 'PRIMARY_TABLE';
+const ddbEnvironmentVariableName = 'PRIMARY_TABLE_NAME';
 const s3EnvironmentVariableName = 'PRIMARY_BUCKET_NAME';
-const snsEnvironmentVariableName = 'PRIMARY_SNS_TOPIC';
+const snsEnvironmentVariableName = 'PRIMARY_SNS_TOPIC_ARN';
 
 function connectDdbToLambdas(table: dynamodb.Table, lambdas: LambdasObject, names: string[], envVarName: string) {
   names.forEach((name) => {
@@ -84,6 +84,9 @@ export class Api extends Stack {
             ]
           },
         }),
+        environment: {
+          CORS_ALLOW_ORIGIN_HEADER: config.corsAllowOriginHeader,
+        },
       }
     }
 
@@ -294,6 +297,11 @@ export class Api extends Stack {
       requestUserToken: {
         lambdaConfig: {
           ...baseLambdaConfig('requestUserToken'),
+          environment: {
+            CORS_ALLOW_ORIGIN_HEADER: config.corsAllowOriginHeader, // Don't want to overwrite this
+            TOKEN_ISSUER: config.tokenIssuer,
+            TOKEN_EXPIRATION_TIME: config.tokenExpirationTime,
+          },
         },
         methodConfig: {
           requestParameters: {
@@ -383,11 +391,8 @@ export class Api extends Stack {
       s3EnvironmentVariableName,
     );
 
-    // primaryBucket.grantRead(authorizerLambda);
-    // authorizerLambda.addEnvironment(s3EnvironmentVariableName, primaryBucket.bucketName);
-    // if (api.lambdaLayer) {
-    //   authorizerLambda.addLayers(api.lambdaLayer);
-    // }
+    primaryBucket.grantRead(authorizerLambda);
+    authorizerLambda.addEnvironment(s3EnvironmentVariableName, primaryBucket.bucketName);
 
     /**************************************************************************
      *
@@ -721,6 +726,7 @@ export class Api extends Stack {
             resources: [config.sesEmailIdentityArn],
           }),
         );
+        // TODO add SES env var
       }
 
       if (name.putsS3) {

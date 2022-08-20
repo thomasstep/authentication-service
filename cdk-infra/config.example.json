@@ -1,0 +1,11 @@
+{
+  "cdkEnvironment": {
+    "account": "xxxxx",
+    "region": "us-east-1"
+  },
+  "corsAllowOriginHeader": "*",
+  "tokenIssuer": "https://example.com",
+  "tokenExpirationTime": "6h",
+  "sourceEmailAddress": "example@email.com",
+  "sesEmailIdentityArn": "arn:aws:ses:us-east-1:xxxxx:identity/example@email.com"
+}
