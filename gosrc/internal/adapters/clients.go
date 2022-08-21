@@ -8,6 +8,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
 	"github.com/aws/aws-sdk-go-v2/service/sns"
+	"github.com/aws/aws-sdk-go-v2/service/s3"
 )
 
 var awsConfig aws.Config
@@ -18,6 +19,9 @@ var onceDdbClient sync.Once
 
 var snsClient *sns.Client
 var onceSnsClient sync.Once
+
+var s3Client *s3.Client
+var onceS3Client sync.Once
 
 func getAwsConfig() aws.Config {
 	onceAwsConfig.Do(func() {
@@ -57,4 +61,18 @@ func GetSnsClient() *sns.Client {
 	})
 
 	return snsClient
+}
+
+func GetS3Client() *sns.Client {
+	onceS3Client.Do(func() {
+		awsConfig = getAwsConfig()
+
+		region := configs.Region
+
+		snsClient = s3.NewFromConfig(awsConfig, func(opt *s3.Options) {
+			opt.Region = region
+		})
+	})
+
+	return s3Client
 }
