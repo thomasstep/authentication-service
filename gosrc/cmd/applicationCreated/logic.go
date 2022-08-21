@@ -3,53 +3,53 @@ package main
 import (
 	"crypto/rand"
 	"crypto/rsa"
-  "crypto/x509"
-  "encoding/pem"
+	"crypto/x509"
 	"encoding/json"
-  "os"
+	"encoding/pem"
 
-  "github.com/lestrrat-go/jwx/v2/jwk"
+	"github.com/lestrrat-go/jwx/v2/jwk"
 
-	// "github.com/thomasstep/authentication-service/internal/adapters"
+	"github.com/thomasstep/authentication-service/internal/adapters"
+	"github.com/thomasstep/authentication-service/internal/common"
 )
 
 func logic(applicationId string) {
-  numBits := 2048
-  // Generate keys
+	numBits := 2048
+	// Generate keys
 	privateKey, privKeyErr := rsa.GenerateKey(rand.Reader, numBits)
-  if privKeyErr != nil {
-    panic(privKeyErr)
-  }
-  publicKey := privateKey.PublicKey
-  publicJwk, pubJwkErr := jwk.FromRaw(publicKey)
-  if pubJwkErr != nil {
-    panic(pubJwkErr)
-  }
+	if privKeyErr != nil {
+		panic(privKeyErr)
+	}
+	publicKey := privateKey.PublicKey
+	publicJwk, pubJwkErr := jwk.FromRaw(publicKey)
+	if pubJwkErr != nil {
+		panic(pubJwkErr)
+	}
 	publicJwk.Set("use", "sig")
 	publicJwk.Set("alg", "RS256")
 	publicJwk.Set("kid", applicationId)
 	publicJwk.Set("key_ops", jwk.KeyOperationList{jwk.KeyOpVerify})
-  publicJwks := jwk.NewSet()
-  publicJwks.AddKey(publicJwk)
+	publicJwks := jwk.NewSet()
+	publicJwks.AddKey(publicJwk)
 
-  // Create files
-  privateKeyFileName := "private.pem"
-  publicKeyFileName := "public.pem"
-  publicJwksFileName := "jwks.json"
-  privateKeyFile, privKeyFileErr := os.Create(privateKeyFileName)
-  if privKeyFileErr != nil {
-    panic(privKeyFileErr)
-  }
-  publicKeyFile, pubKeyFileErr := os.Create(publicKeyFileName)
-  if pubKeyFileErr != nil {
-    panic(pubKeyFileErr)
-  }
-  publicJwksFile, pubJwksFileErr := os.Create(publicJwksFileName)
-  if pubJwksFileErr != nil {
-    panic(pubJwksFileErr)
-  }
+	// Create files
+	// privateKeyFileName := "private.pem"
+	// publicKeyFileName := "public.pem"
+	// publicJwksFileName := "jwks.json"
+	// privateKeyFile, privKeyFileErr := os.Create(privateKeyFileName)
+	// if privKeyFileErr != nil {
+	//   panic(privKeyFileErr)
+	// }
+	// publicKeyFile, pubKeyFileErr := os.Create(publicKeyFileName)
+	// if pubKeyFileErr != nil {
+	//   panic(pubKeyFileErr)
+	// }
+	// publicJwksFile, pubJwksFileErr := os.Create(publicJwksFileName)
+	// if pubJwksFileErr != nil {
+	//   panic(pubJwksFileErr)
+	// }
 
-  // Setup to PEM encode
+	// Setup to PEM encode
 	pkcs8Bytes, pkcs8BytesErr := x509.MarshalPKCS8PrivateKey(privateKey)
 	if pkcs8BytesErr != nil {
 		panic(pkcs8BytesErr)
@@ -58,30 +58,43 @@ func logic(applicationId string) {
 	if pkixBytesErr != nil {
 		panic(pkixBytesErr)
 	}
-  privateKeyBlock := &pem.Block{
+	privateKeyBlock := &pem.Block{
 		Type:  "PRIVATE KEY",
 		Bytes: pkcs8Bytes,
 	}
-  publicKeyBlock := &pem.Block{
+	publicKeyBlock := &pem.Block{
 		Type:  "PUBLIC KEY",
 		Bytes: pkixBytes,
 	}
 
-  // Encode and write to files
-	privKeyPemErr := pem.Encode(privateKeyFile, privateKeyBlock)
-  if privKeyPemErr != nil {
-    panic(privKeyPemErr)
-  }
-	pubKeyPemErr := pem.Encode(publicKeyFile, publicKeyBlock)
-  if pubKeyPemErr != nil {
-    panic(pubKeyPemErr)
-  }
-  publicJwksJson, pubJwksJsonErr := json.Marshal(publicJwks)
-  if pubJwksJsonErr != nil {
-    panic(pubJwksJsonErr)
-  }
-  _, pubJwksWriteErr := publicJwksFile.Write(publicJwksJson)
-  if pubJwksWriteErr != nil {
-    panic(pubJwksWriteErr)
-  }
+	// Encode and write to files
+	// privKeyPemErr := pem.Encode(privateKeyFile, privateKeyBlock)
+	// if privKeyPemErr != nil {
+	//   panic(privKeyPemErr)
+	// }
+	// pubKeyPemErr := pem.Encode(publicKeyFile, publicKeyBlock)
+	// if pubKeyPemErr != nil {
+	//   panic(pubKeyPemErr)
+	// }
+	// publicJwksJson, pubJwksJsonErr := json.Marshal(publicJwks)
+	// if pubJwksJsonErr != nil {
+	//   panic(pubJwksJsonErr)
+	// }
+	// _, pubJwksWriteErr := publicJwksFile.Write(publicJwksJson)
+	// if pubJwksWriteErr != nil {
+	//   panic(pubJwksWriteErr)
+	// }
+
+	// Encode to PEM
+	privKeyPem := pem.EncodeToMemory(privateKeyBlock)
+	pubKeyPem := pem.EncodeToMemory(publicKeyBlock)
+	publicJwksJson, pubJwksJsonErr := json.Marshal(publicJwks)
+	if pubJwksJsonErr != nil {
+		panic(pubJwksJsonErr)
+	}
+
+	// Upload to S3
+	adapters.SaveFile(privKeyPem, common.GetPrivateKeyPath(applicationId))
+	adapters.SaveFile(pubKeyPem, common.GetPublicKeyPath(applicationId))
+	adapters.SaveFile(publicJwksJson, common.GetJwksPath(applicationId))
 }

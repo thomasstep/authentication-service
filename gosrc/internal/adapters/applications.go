@@ -47,7 +47,7 @@ func CreateApplication() (string, error) {
 	}
 
 	_, putItemErr := ddbClient.PutItem(context.TODO(), &dynamodb.PutItemInput{
-		TableName: &configs.PrimaryTableName,
+		TableName: &config.PrimaryTableName,
 		Item:      av,
 	})
 	if putItemErr != nil {

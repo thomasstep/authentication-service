@@ -1,6 +1,7 @@
 package common
 
 import (
+	"fmt"
 	"os"
 	"time"
 
@@ -22,4 +23,16 @@ func GetEnv(key string, def string) string {
 	}
 
 	return value
+}
+
+func GetPublicKeyPath(applicationId string) string {
+	return fmt.Sprintf("private/%s/private.key", applicationId)
+}
+
+func GetPrivateKeyPath(applicationId string) string {
+	return fmt.Sprintf("public/%s/public.key", applicationId)
+}
+
+func GetJwksPath(applicationId string) string {
+	return fmt.Sprintf("public/%s/jwks.json", applicationId)
 }

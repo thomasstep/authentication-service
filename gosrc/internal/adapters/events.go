@@ -32,7 +32,7 @@ func EmitApplicationCreated(applicationId string) error {
 	}
 
 	_, publishErr := snsClient.Publish(context.TODO(), &sns.PublishInput{
-		TopicArn:          aws.String(configs.PrimaryTopicArn),
+		TopicArn:          aws.String(config.PrimaryTopicArn),
 		MessageAttributes: messageAttributes,
 		Message:           &message,
 	})
