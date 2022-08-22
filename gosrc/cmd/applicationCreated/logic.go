@@ -93,8 +93,8 @@ func logic(applicationId string) {
 		panic(pubJwksJsonErr)
 	}
 
-	// Upload to S3
-	adapters.SaveFile(privKeyPem, common.GetPrivateKeyPath(applicationId))
-	adapters.SaveFile(pubKeyPem, common.GetPublicKeyPath(applicationId))
-	adapters.SaveFile(publicJwksJson, common.GetJwksPath(applicationId))
+	// Save files
+	adapters.WriteFile(privKeyPem, common.GetPrivateKeyPath(applicationId))
+	adapters.WriteFile(pubKeyPem, common.GetPublicKeyPath(applicationId))
+	adapters.WriteFile(publicJwksJson, common.GetJwksPath(applicationId))
 }

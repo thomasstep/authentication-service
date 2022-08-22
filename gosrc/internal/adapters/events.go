@@ -1,11 +1,7 @@
 package adapters
 
 import (
-	"context"
-	"encoding/json"
-
 	"github.com/aws/aws-sdk-go-v2/aws"
-	"github.com/aws/aws-sdk-go-v2/service/sns"
 	"github.com/aws/aws-sdk-go-v2/service/sns/types"
 )
 
@@ -13,17 +9,20 @@ type ApplicationCreatedEvent struct {
 	ApplicationId string `json:"applicationId"`
 }
 
+type ApplicationDeletedEvent struct {
+	ApplicationId string `json:"applicationId"`
+}
+
+type EmailVerificationEvent struct {
+	ApplicationId     string `json:"applicationId"`
+	Email             string `json:"email"`
+	VerificationToken string `json:"verificationToken"`
+}
+
 func EmitApplicationCreated(applicationId string) error {
-	snsClient := GetSnsClient()
-
-	messageBytes, marshalErr := json.Marshal(&ApplicationCreatedEvent{
+	message := &ApplicationCreatedEvent{
 		ApplicationId: applicationId,
-	})
-	if marshalErr != nil {
-		return marshalErr
 	}
-
-	message := string(messageBytes)
 	messageAttributes := map[string]types.MessageAttributeValue{
 		"operation": types.MessageAttributeValue{
 			DataType:    aws.String("String"),
@@ -31,11 +30,47 @@ func EmitApplicationCreated(applicationId string) error {
 		},
 	}
 
-	_, publishErr := snsClient.Publish(context.TODO(), &sns.PublishInput{
-		TopicArn:          aws.String(config.PrimaryTopicArn),
-		MessageAttributes: messageAttributes,
-		Message:           &message,
-	})
+	_, publishErr := snsPublish(message, messageAttributes)
+	if publishErr != nil {
+		return publishErr
+	}
+
+	return nil
+}
+
+func EmitApplicationDeleted(applicationId string) error {
+	message := &ApplicationDeletedEvent{
+		ApplicationId: applicationId,
+	}
+	messageAttributes := map[string]types.MessageAttributeValue{
+		"operation": types.MessageAttributeValue{
+			DataType:    aws.String("String"),
+			StringValue: aws.String("applicationDeleted"),
+		},
+	}
+
+	_, publishErr := snsPublish(message, messageAttributes)
+	if publishErr != nil {
+		return publishErr
+	}
+
+	return nil
+}
+
+func EmitEmailVerificationEvent(applicationId string, email string, verificationToken string) error {
+	message := &EmailVerificationEvent{
+		ApplicationId:     applicationId,
+		Email:             email,
+		VerificationToken: verificationToken,
+	}
+	messageAttributes := map[string]types.MessageAttributeValue{
+		"operation": types.MessageAttributeValue{
+			DataType:    aws.String("String"),
+			StringValue: aws.String("sendEmailVerification"),
+		},
+	}
+
+	_, publishErr := snsPublish(message, messageAttributes)
 	if publishErr != nil {
 		return publishErr
 	}

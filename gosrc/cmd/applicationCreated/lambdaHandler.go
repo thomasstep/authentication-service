@@ -1,15 +1,14 @@
 package main
 
 import (
-"context"
-"encoding/json"
-"fmt"
+	"context"
+	"encoding/json"
 
-"github.com/aws/aws-lambda-go/events"
-"github.com/aws/aws-lambda-go/lambda"
-"go.uber.org/zap"
+	"github.com/aws/aws-lambda-go/events"
+	"github.com/aws/aws-lambda-go/lambda"
+	"go.uber.org/zap"
 
-"github.com/thomasstep/authentication-service/internal/adapters"
+	"github.com/thomasstep/authentication-service/internal/adapters"
 )
 
 func handleRequest(ctx context.Context, snsEvent events.SNSEvent) {
@@ -24,7 +23,7 @@ func handleRequest(ctx context.Context, snsEvent events.SNSEvent) {
 
 		applicationId := message.ApplicationId
 		logger.Info("Processing application created",
-			zap.String("applicationId", applicationId)
+			zap.String("applicationId", applicationId),
 		)
 
 		logic(applicationId)

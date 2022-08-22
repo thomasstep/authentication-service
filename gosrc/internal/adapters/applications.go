@@ -1,11 +1,6 @@
 package adapters
 
 import (
-	"context"
-
-	"github.com/aws/aws-sdk-go-v2/feature/dynamodb/attributevalue"
-	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
-
 	"github.com/thomasstep/authentication-service/internal/common"
 )
 
@@ -26,10 +21,7 @@ type ApplicationItem struct {
 }
 
 func CreateApplication() (string, error) {
-	ddbClient := GetDynamodbClient()
-
 	applicationId := common.GenerateToken()
-	logger.Info(applicationId)
 	item := ApplicationItem{
 		Id:               applicationId,
 		SecondaryId:      "application",
@@ -40,18 +32,9 @@ func CreateApplication() (string, error) {
 		UserCount:        0,
 		Created:          common.GetIsoString(),
 	}
-	av, marshalErr := attributevalue.MarshalMap(item)
-	if marshalErr != nil {
-		logger.Error("Failed to marshal item")
-		return "", marshalErr
-	}
 
-	_, putItemErr := ddbClient.PutItem(context.TODO(), &dynamodb.PutItemInput{
-		TableName: &config.PrimaryTableName,
-		Item:      av,
-	})
+	_, putItemErr := dynamodbPut(item)
 	if putItemErr != nil {
-		logger.Error("Failed to put item")
 		return "", putItemErr
 	}
 

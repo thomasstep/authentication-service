@@ -34,16 +34,16 @@ As a user of the authentication service I would like to be able to
 
 This will be a mash of the current data model with small adjustments for the new API.
 
-| Partition key       | Sort key               | Attributes     |
-| ------------------- | ---------------------- | -------------- |
-| `<app-id>`          | `application`          | `{ applicationState: enum{active, suspended}, emailFromName: string, resetPasswordUrl: string, verificationUrl: string, userCount: number, jwksUri: string, created: timestamp }` |
-| `<app-id>`          | `user#<id>`            | `{ methodsUsed: []signinMethods{email#<email>, phone#<number>, google#<googleId>, etc.}, lastSignin: timestamp, created: timestamp }` |
-| `<app-id>`          | `unverified#<token>`   | `{ email: string, passwordHash: string, ttl: timestamp }` |
-| `<app-id>`          | `email#<email>`    | `{ userId: string, passwordHash: string, lastPasswordChange: timestamp, created: timestamp }` |
-| `<app-id>`          | `reset#<token>`        | `{ email: string, ttl: timestamp }` |
-| `<app-id>`          | `phone#<number>` | `{ userId: string, created: timestamp }` |
-| `<app-id>`          | `google#<googleId>`    | `{ userId: string, created: timestamp }` |
-| `<app-id>`          | `passwordless#<token>` | `{ userId: string, ttl: timestamp }` |
+| Partition key       | Sort key                 | Attributes     |
+| ------------------- | ------------------------ | -------------- |
+| `<app-id>`          | `application`            | `{ applicationState: enum{active, suspended}, emailFromName: string, resetPasswordUrl: string, verificationUrl: string, userCount: number, jwksUri: string, created: timestamp }` |
+| `<app-id>`          | `user#<id>`              | `{ methodsUsed: []signinMethods{email#<email>, phone#<number>, google#<googleId>, etc.}, lastSignin: timestamp, created: timestamp }` |
+| `<app-id>`          | `verification#<token>`   | `{ email: string, passwordHash: string, ttl: timestamp }` |
+| `<app-id>`          | `email#<email>`          | `{ userId: string, passwordHash: string, lastPasswordChange: timestamp, created: timestamp }` |
+| `<app-id>`          | `reset#<token>`          | `{ email: string, ttl: timestamp }` |
+| `<app-id>`          | `phone#<number>`         | `{ userId: string, created: timestamp }` |
+| `<app-id>`          | `google#<googleId>`      | `{ userId: string, created: timestamp }` |
+| `<app-id>`          | `passwordless#<token>`   | `{ userId: string, ttl: timestamp }` |
 <!-- | `<app-id>`          | `refresh#<token>`      | `{ email: string, ttl: timestamp }` | -->
 
 Changes from the current data model:

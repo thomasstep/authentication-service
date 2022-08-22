@@ -1,7 +1,9 @@
 package common
 
 import (
+	"crypto/rand"
 	"fmt"
+	"math/big"
 	"os"
 	"time"
 
@@ -10,6 +12,17 @@ import (
 
 func GenerateToken() string {
 	return uuid.New().String()
+}
+
+func GenerateEasyToken() string {
+	randInt, randIntErr := rand.Int(rand.Reader, big.NewInt(99999))
+	if randIntErr != nil {
+		panic(randIntErr)
+	}
+
+	var lowerBoundedInt big.Int
+	lowerBoundedInt.Add(big.NewInt(100000), randInt)
+	return lowerBoundedInt.String()
 }
 
 func GetIsoString() string {
