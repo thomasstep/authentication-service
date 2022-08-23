@@ -31,7 +31,7 @@ func lambdaAdapter(ctx context.Context, request events.APIGatewayProxyRequest) (
 
 	return events.APIGatewayProxyResponse{
 		StatusCode: 204,
-	}, err
+	}, nil
 }
 
 func getLambdaHandler() types.HandlerSignature {

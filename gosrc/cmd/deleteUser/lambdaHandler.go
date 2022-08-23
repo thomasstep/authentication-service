@@ -15,18 +15,20 @@ func handleRequest(ctx context.Context, snsEvent events.SNSEvent) {
 	for _, record := range snsEvent.Records {
 		snsRecord := record.SNS
 		snsMessage := snsRecord.Message
-		var message adapters.ApplicationDeletedEvent
+		var message adapters.UserDeletedEvent
 		unmarshalErr := json.Unmarshal([]byte(snsMessage), &message)
 		if unmarshalErr != nil {
 			logger.Error(unmarshalErr.Error())
 		}
 
 		applicationId := message.ApplicationId
-		logger.Info("Processing application deleted",
+		userId := message.UserId
+		logger.Info("Processing user deleted",
 			zap.String("applicationId", applicationId),
+			zap.String("userId", userId),
 		)
 
-		logic(applicationId)
+		logic(applicationId, userId)
 	}
 }
 

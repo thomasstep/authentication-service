@@ -19,6 +19,11 @@ type EmailVerificationEvent struct {
 	VerificationToken string `json:"verificationToken"`
 }
 
+type UserDeletedEvent struct {
+	ApplicationId string `json:"applicationId"`
+	UserId        string `json:"userId"`
+}
+
 func EmitApplicationCreated(applicationId string) error {
 	message := &ApplicationCreatedEvent{
 		ApplicationId: applicationId,

@@ -163,10 +163,10 @@ func DeleteUnverifiedRecord(applicationId string, token string) error {
 	return nil
 }
 
-func DeleteEmailSignInRecord(applicationId string, email string) error {
+func DeleteSignInRecord(applicationId string, signInMethod string) error {
 	key := &KeyBasedStruct{
 		Id:          applicationId,
-		SecondaryId: fmt.Sprintf("%s#%s", config.EmailSignInSortKey, email),
+		SecondaryId: signInMethod,
 	}
 	_, putItemErr := dynamodbDeleteWrapper(key)
 	if putItemErr != nil {
