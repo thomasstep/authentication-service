@@ -5,13 +5,14 @@ import (
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/feature/dynamodb/attributevalue"
+	"github.com/aws/aws-sdk-go-v2/feature/dynamodb/expression"
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
 	"go.uber.org/zap"
 )
 
 type KeyBasedStruct struct {
-	Id          string   `dynamodbav:"id"`
-	SecondaryId string   `dynamodbav:"secondaryId"`
+	Id          string `dynamodbav:"id"`
+	SecondaryId string `dynamodbav:"secondaryId"`
 }
 
 func dynamodbPutWrapper(item interface{}, conditionExp *string) (*dynamodb.PutItemOutput, error) {
@@ -62,8 +63,8 @@ func dynamodbGetWrapper(key interface{}, resultItem interface{}) (*dynamodb.GetI
 	}
 
 	getItemRes, getItemErr := ddbClient.GetItem(context.TODO(), &dynamodb.GetItemInput{
-		TableName:           aws.String(config.PrimaryTableName),
-		Key:                av,
+		TableName: aws.String(config.PrimaryTableName),
+		Key:       av,
 	})
 	if getItemErr != nil {
 		logger.Error("Failed to get item", zap.Error(getItemErr))
@@ -78,6 +79,50 @@ func dynamodbGetWrapper(key interface{}, resultItem interface{}) (*dynamodb.GetI
 	}
 
 	return getItemRes, nil
+}
+
+func dynamodbUpdateWrapper(key interface{}, update expression.UpdateBuilder) (*dynamodb.UpdateItemOutput, error) {
+	ddbClient := GetDynamodbClient()
+	av, marshalErr := attributevalue.MarshalMap(key)
+	if marshalErr != nil {
+		logger.Error("Failed to marshal key",
+			zap.Any("key", key),
+			zap.Error(marshalErr),
+		)
+		return &dynamodb.UpdateItemOutput{}, marshalErr
+	}
+
+	expr, builderErr := expression.NewBuilder().WithUpdate(update).Build()
+	if builderErr != nil {
+		logger.Error("Failed to build update expression",
+			zap.Error(builderErr),
+		)
+		return &dynamodb.UpdateItemOutput{}, builderErr
+	}
+
+	updateItemRes, updateItemErr := ddbClient.UpdateItem(context.TODO(), &dynamodb.UpdateItemInput{
+		TableName:                 aws.String(config.PrimaryTableName),
+		Key:                       av,
+		UpdateExpression:          expr.Update(),
+		ExpressionAttributeNames:  expr.Names(),
+		ExpressionAttributeValues: expr.Values(),
+	})
+	if updateItemErr != nil {
+		// if apiErr := new(types.ProvisionedThroughputExceededException); errors.As(err, &apiErr) {
+		// 	fmt.Println("throughput exceeded")
+		// } else if apiErr := new(types.ResourceNotFoundException); errors.As(err, &apiErr) {
+		// 	fmt.Println("resource not found")
+		// } else if apiErr := new(types.InternalServerError); errors.As(err, &apiErr) {
+		// 	fmt.Println("internal server error")
+		// } else {
+		// 	fmt.Println(err)
+		// }
+		// return
+		logger.Error("Failed to get item", zap.Error(updateItemErr))
+		return &dynamodb.UpdateItemOutput{}, updateItemErr
+	}
+
+	return updateItemRes, nil
 }
 
 func dynamodbDeleteWrapper(key interface{}) (*dynamodb.DeleteItemOutput, error) {

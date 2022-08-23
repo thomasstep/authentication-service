@@ -2,52 +2,32 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 
 	"github.com/aws/aws-lambda-go/events"
 	"github.com/aws/aws-lambda-go/lambda"
+	"go.uber.org/zap"
+
+	"github.com/thomasstep/authentication-service/internal/adapters"
 )
 
-// Help function to generate an IAM policy
-func generatePolicy(principalId, effect, resource string) events.APIGatewayCustomAuthorizerResponse {
-	authResponse := events.APIGatewayCustomAuthorizerResponse{PrincipalID: principalId}
-
-	if effect != "" && resource != "" {
-		authResponse.PolicyDocument = events.APIGatewayCustomAuthorizerPolicy{
-			Version: "2012-10-17",
-			Statement: []events.IAMPolicyStatement{
-				{
-					Action:   []string{"execute-api:Invoke"},
-					Effect:   effect,
-					Resource: []string{resource},
-				},
-			},
+func handleRequest(ctx context.Context, snsEvent events.SNSEvent) {
+	for _, record := range snsEvent.Records {
+		snsRecord := record.SNS
+		snsMessage := snsRecord.Message
+		var message adapters.ApplicationDeletedEvent
+		unmarshalErr := json.Unmarshal([]byte(snsMessage), &message)
+		if unmarshalErr != nil {
+			logger.Error(unmarshalErr.Error())
 		}
+
+		applicationId := message.ApplicationId
+		logger.Info("Processing application deleted",
+			zap.String("applicationId", applicationId),
+		)
+
+		logic(applicationId)
 	}
-
-	// Optional output with custom properties of the String, Number or Boolean type.
-	authResponse.Context = map[string]interface{}{
-		"stringKey":  "stringval",
-		"numberKey":  123,
-		"booleanKey": true,
-	}
-	return authResponse
-}
-
-func handleRequest(ctx context.Context, event events.APIGatewayCustomAuthorizerRequest) (events.APIGatewayCustomAuthorizerResponse, error) {
-	// For now, just let everything through
-	return generatePolicy("user", "Allow", event.MethodArn), nil
-
-	// token := event.AuthorizationToken
-	// switch strings.ToLower(token) {
-	// case "allow":
-	// 	return generatePolicy("user", "Allow", event.MethodArn), nil
-	// case "deny":
-	// 	return generatePolicy("user", "Deny", event.MethodArn), nil
-	// case "unauthorized":
-	// 	return events.APIGatewayCustomAuthorizerResponse{}, errors.New("Unauthorized") // Return a 401 Unauthorized response
-	// default:
-	// 	return events.APIGatewayCustomAuthorizerResponse{}, errors.New("Error: Invalid token")
-	// }
 }
 
 func main() {

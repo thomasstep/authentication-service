@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/aws/aws-sdk-go-v2/feature/dynamodb/expression"
+
 	"github.com/thomasstep/authentication-service/internal/common"
 )
 
@@ -51,8 +53,8 @@ func CreateUnverifiedRecord(applicationId string, email string, passwordHash str
 	return verificationToken, nil
 }
 
-func CreateEmailSignInRecord(applicationId string, userId string, email string, passwordHash string) (string, error) {
-	verificationToken := common.GenerateEasyToken()
+// Should this be exporting or called into another func that also adds signin method to user?
+func CreateEmailSignInRecord(applicationId string, userId string, email string, passwordHash string) error {
 	item := EmailSignInItem{
 		Id:                 applicationId,
 		SecondaryId:        fmt.Sprintf("%s#%s", config.EmailSignInSortKey, email),
@@ -64,10 +66,10 @@ func CreateEmailSignInRecord(applicationId string, userId string, email string, 
 
 	_, putItemErr := dynamodbPutCheckSecId(item)
 	if putItemErr != nil {
-		return "", putItemErr
+		return putItemErr
 	}
 
-	return verificationToken, nil
+	return nil
 }
 
 func CreateResetPasswordRecord(applicationId string, userId string, email string, passwordHash string) (string, error) {
@@ -85,4 +87,104 @@ func CreateResetPasswordRecord(applicationId string, userId string, email string
 	}
 
 	return resetToken, nil
+}
+
+func ReadUnverifiedRecord(applicationId string, token string) (*EmailVerificationItem, error) {
+	key := &KeyBasedStruct{
+		Id:          applicationId,
+		SecondaryId: fmt.Sprintf("%s#%s", config.VerificationSortKey, token),
+	}
+	result := &EmailVerificationItem{}
+	_, getItemErr := dynamodbGetWrapper(key, result)
+	if getItemErr != nil {
+		return &EmailVerificationItem{}, getItemErr
+	}
+
+	return result, nil
+}
+
+func ReadEmailSignInRecord(applicationId string, email string) (*EmailSignInItem, error) {
+	key := &KeyBasedStruct{
+		Id:          applicationId,
+		SecondaryId: fmt.Sprintf("%s#%s", config.EmailSignInSortKey, email),
+	}
+	result := &EmailSignInItem{}
+	_, getItemErr := dynamodbGetWrapper(key, result)
+	if getItemErr != nil {
+		return &EmailSignInItem{}, getItemErr
+	}
+
+	return result, nil
+}
+
+func ReadResetPasswordRecord(applicationId string, token string) (*ResetTokenItem, error) {
+	key := &KeyBasedStruct{
+		Id:          applicationId,
+		SecondaryId: fmt.Sprintf("%s#%s", config.ResetPasswordSortKey, token),
+	}
+	result := &ResetTokenItem{}
+	_, getItemErr := dynamodbGetWrapper(key, result)
+	if getItemErr != nil {
+		return &ResetTokenItem{}, getItemErr
+	}
+
+	return result, nil
+}
+
+func UpdatePasswordRecord(applicationId string, email string, passwordHash string) error {
+	key := &KeyBasedStruct{
+		Id:          applicationId,
+		SecondaryId: fmt.Sprintf("%s#%s", config.EmailSignInSortKey, email),
+	}
+
+	update := expression.Set(
+		expression.Name("passwordHash"),
+		expression.Value(passwordHash),
+	)
+
+	_, updateItemErr := dynamodbUpdateWrapper(key, update)
+	if updateItemErr != nil {
+		return updateItemErr
+	}
+
+	return nil
+}
+
+func DeleteUnverifiedRecord(applicationId string, token string) error {
+	key := &KeyBasedStruct{
+		Id:          applicationId,
+		SecondaryId: fmt.Sprintf("%s#%s", config.VerificationSortKey, token),
+	}
+	_, putItemErr := dynamodbDeleteWrapper(key)
+	if putItemErr != nil {
+		return putItemErr
+	}
+
+	return nil
+}
+
+func DeleteEmailSignInRecord(applicationId string, email string) error {
+	key := &KeyBasedStruct{
+		Id:          applicationId,
+		SecondaryId: fmt.Sprintf("%s#%s", config.EmailSignInSortKey, email),
+	}
+	_, putItemErr := dynamodbDeleteWrapper(key)
+	if putItemErr != nil {
+		return putItemErr
+	}
+
+	return nil
+}
+
+func DeleteResetPasswordRecord(applicationId string, token string) error {
+	key := &KeyBasedStruct{
+		Id:          applicationId,
+		SecondaryId: fmt.Sprintf("%s#%s", config.ResetPasswordSortKey, token),
+	}
+	_, putItemErr := dynamodbDeleteWrapper(key)
+	if putItemErr != nil {
+		return putItemErr
+	}
+
+	return nil
 }
