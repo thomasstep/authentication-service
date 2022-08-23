@@ -11,9 +11,12 @@ type ConfigStruct struct {
 	Region string
 
 	// Database related
-	PrimaryTableName    string
-	VerificationSortKey string
-	VerificationTtl     time.Duration // To be used while adding to time
+	PrimaryTableName     string
+	EmailSignInSortKey   string
+	ResetPasswordSortKey string
+	UserSortKey          string
+	VerificationSortKey  string
+	VerificationTtl      time.Duration // To be used while adding to time
 
 	// S3 related
 	PrimaryBucketName string
@@ -41,6 +44,9 @@ func GetConfig() *ConfigStruct {
 		Config = &ConfigStruct{
 			Region:                common.GetEnv("AWS_REGION", "us-east-1"),
 			PrimaryTableName:      common.GetEnv("PRIMARY_TABLE_NAME", ""),
+			EmailSignInSortKey:    "email",
+			ResetPasswordSortKey:  "reset",
+			UserSortKey:           "user",
 			VerificationSortKey:   "verification",
 			VerificationTtl:       verificationTtl,
 			PrimaryBucketName:     common.GetEnv("PRIMARY_BUCKET_NAME", ""),

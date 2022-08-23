@@ -9,6 +9,11 @@ import (
 	"go.uber.org/zap"
 )
 
+type KeyBasedStruct struct {
+	Id          string   `dynamodbav:"id"`
+	SecondaryId string   `dynamodbav:"secondaryId"`
+}
+
 func dynamodbPutWrapper(item interface{}, conditionExp *string) (*dynamodb.PutItemOutput, error) {
 	ddbClient := GetDynamodbClient()
 	av, marshalErr := attributevalue.MarshalMap(item)
@@ -43,4 +48,57 @@ func dynamodbPutCheckSecId(item interface{}) (*dynamodb.PutItemOutput, error) {
 	putItemRes, putItemErr := dynamodbPutWrapper(item, aws.String("attribute_not_exists(secondaryId)"))
 
 	return putItemRes, putItemErr
+}
+
+func dynamodbGetWrapper(key interface{}, resultItem interface{}) (*dynamodb.GetItemOutput, error) {
+	ddbClient := GetDynamodbClient()
+	av, marshalErr := attributevalue.MarshalMap(key)
+	if marshalErr != nil {
+		logger.Error("Failed to marshal key",
+			zap.Any("key", key),
+			zap.Error(marshalErr),
+		)
+		return &dynamodb.GetItemOutput{}, marshalErr
+	}
+
+	getItemRes, getItemErr := ddbClient.GetItem(context.TODO(), &dynamodb.GetItemInput{
+		TableName:           aws.String(config.PrimaryTableName),
+		Key:                av,
+	})
+	if getItemErr != nil {
+		logger.Error("Failed to get item", zap.Error(getItemErr))
+		return &dynamodb.GetItemOutput{}, getItemErr
+	}
+	unmarshalErr := attributevalue.UnmarshalMap(getItemRes.Item, resultItem)
+	if unmarshalErr != nil {
+		logger.Error("Failed to unmarshal item",
+			zap.Error(unmarshalErr),
+		)
+		return &dynamodb.GetItemOutput{}, unmarshalErr
+	}
+
+	return getItemRes, nil
+}
+
+func dynamodbDeleteWrapper(key interface{}) (*dynamodb.DeleteItemOutput, error) {
+	ddbClient := GetDynamodbClient()
+	av, marshalErr := attributevalue.MarshalMap(key)
+	if marshalErr != nil {
+		logger.Error("Failed to marshal key",
+			zap.Any("key", key),
+			zap.Error(marshalErr),
+		)
+		return &dynamodb.DeleteItemOutput{}, marshalErr
+	}
+
+	deleteItemRes, deleteItemErr := ddbClient.DeleteItem(context.TODO(), &dynamodb.DeleteItemInput{
+		TableName: aws.String(config.PrimaryTableName),
+		Key:       av,
+	})
+	if deleteItemErr != nil {
+		logger.Error("Failed to get item", zap.Error(deleteItemErr))
+		return &dynamodb.DeleteItemOutput{}, deleteItemErr
+	}
+
+	return deleteItemRes, nil
 }
