@@ -15,18 +15,20 @@ func handleRequest(ctx context.Context, snsEvent events.SNSEvent) {
 	for _, record := range snsEvent.Records {
 		snsRecord := record.SNS
 		snsMessage := snsRecord.Message
-		var message adapters.ApplicationDeletedEvent
+		var message adapters.RequestPasswordResetEvent
 		unmarshalErr := json.Unmarshal([]byte(snsMessage), &message)
 		if unmarshalErr != nil {
 			logger.Error(unmarshalErr.Error())
 		}
 
 		applicationId := message.ApplicationId
-		logger.Info("Processing application deleted",
-			zap.String("applicationId", applicationId),
+		email := message.Email
+		logger.Info("Processing request password reset",
+		zap.String("applicationId", applicationId),
+		zap.String("email", email),
 		)
 
-		logic(applicationId)
+		logic(applicationId, email)
 	}
 }
 

@@ -11,27 +11,25 @@ import (
 	"github.com/aws/aws-lambda-go/lambda"
 )
 
-type BodyStructure struct {
-	Email    string `json:"email"`
-	Password string `json:"password"`
+type ResponseStructure struct {
+	Id    string `json:"id"`
 }
 
 func lambdaAdapter(ctx context.Context, request events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
-	applicationId := request.PathParameters["applicationId"]
-	var body BodyStructure
-	unmarshalErr := json.Unmarshal([]byte(request.Body), &body)
-	if unmarshalErr != nil {
-		panic(unmarshalErr)
-	}
-
-	err := logic(applicationId, body.Email, body.Password)
-	if err != nil {
-		return events.APIGatewayProxyResponse{}, err
+	requestContext := request.RequestContext
+	authorizer := requestContext.Authorizer
+	userId := authorizer["userId"]
+	jsonBody, marshalErr := json.Marshal(&ResponseStructure{
+		Id: userId.(string),
+	})
+	if marshalErr != nil {
+		return events.APIGatewayProxyResponse{}, marshalErr
 	}
 
 	return events.APIGatewayProxyResponse{
-		StatusCode: 204,
-	}, err
+		StatusCode: 200,
+		Body:       string(jsonBody),
+	}, nil
 }
 
 func getLambdaHandler() types.HandlerSignature {

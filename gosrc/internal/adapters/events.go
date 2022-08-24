@@ -24,6 +24,11 @@ type UserDeletedEvent struct {
 	UserId        string `json:"userId"`
 }
 
+type RequestPasswordResetEvent struct {
+	ApplicationId string `json:"applicationId"`
+	Email         string `json:"email"`
+}
+
 func EmitApplicationCreated(applicationId string) error {
 	message := &ApplicationCreatedEvent{
 		ApplicationId: applicationId,

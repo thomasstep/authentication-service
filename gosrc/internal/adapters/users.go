@@ -4,30 +4,30 @@ import (
 	"fmt"
 
 	"github.com/aws/aws-sdk-go-v2/feature/dynamodb/expression"
-	"github.com/aws/aws-sdk-go-v2/service/dynamodb/types"
+	ddbTypes "github.com/aws/aws-sdk-go-v2/service/dynamodb/types"
 
 	"github.com/thomasstep/authentication-service/internal/common"
+	"github.com/thomasstep/authentication-service/internal/types"
 )
 
 // For handling user entities
 
-type UserItem struct {
-	Id          string `dynamodbav:"id"`
-	SecondaryId string `dynamodbav:"secondaryId"`
-	// If methodsUsed changes names, the update expression(s) will also need to be edited
-	MethodsUsed []string `dynamodbav:"methodsUsed",stringset,omitemptyelem""`
-	LastSignin  string   `dynamodbav:"lastSignin"`
-	Created     string   `dynamodbav:"created"`
+type DdbUserItem struct {
+	Id               string `dynamodbav:"id"`
+	SecondaryId      string `dynamodbav:"secondaryId"`
+	types.UserItem
 }
 
 func CreateUser(applicationId string, methodsUsed []string) (string, error) {
 	userId := common.GenerateToken()
-	item := UserItem{
+	item := DdbUserItem{
 		Id:          applicationId,
 		SecondaryId: fmt.Sprintf("%s#%s", config.UserSortKey, userId),
-		MethodsUsed: methodsUsed,
-		LastSignin:  common.GetIsoString(),
-		Created:     common.GetIsoString(),
+		UserItem: types.UserItem{
+			MethodsUsed: methodsUsed,
+			LastSignIn:  common.GetIsoString(),
+			Created:     common.GetIsoString(),
+		},
 	}
 
 	_, putItemErr := dynamodbPutCheckSecId(item)
@@ -38,15 +38,15 @@ func CreateUser(applicationId string, methodsUsed []string) (string, error) {
 	return userId, nil
 }
 
-func ReadUser(applicationId string, userId string) (*UserItem, error) {
+func ReadUser(applicationId string, userId string) (*DdbUserItem, error) {
 	key := &KeyBasedStruct{
 		Id:          applicationId,
 		SecondaryId: fmt.Sprintf("%s#%s", config.UserSortKey, userId),
 	}
-	result := &UserItem{}
+	result := &DdbUserItem{}
 	_, getItemErr := dynamodbGetWrapper(key, result)
 	if getItemErr != nil {
-		return &UserItem{}, getItemErr
+		return &DdbUserItem{}, getItemErr
 	}
 
 	return result, nil
@@ -61,7 +61,7 @@ func UpdateSignInMethods(applicationId string, userId string, signInMethod strin
 	update := expression.Add(
 		expression.Name("methodsUsed"),
 		expression.Value(
-			&types.AttributeValueMemberSS{
+			&ddbTypes.AttributeValueMemberSS{
 				Value: []string{signInMethod},
 			},
 		),

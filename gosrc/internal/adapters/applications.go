@@ -4,6 +4,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/feature/dynamodb/expression"
 
 	"github.com/thomasstep/authentication-service/internal/common"
+	"github.com/thomasstep/authentication-service/internal/types"
 )
 
 // For handling application entities
@@ -11,28 +12,25 @@ import (
 const ACTIVE = "active"
 const SUSPENDED = "suspended"
 
-type ApplicationItem struct {
+type DdbApplicationItem struct {
 	Id               string `dynamodbav:"id"`
 	SecondaryId      string `dynamodbav:"secondaryId"`
-	ApplicationState string `dynamodbav:"applicationState"`
-	EmailFromName    string `dynamodbav:"emailFromName"`
-	ResetPasswordUrl string `dynamodbav:"resetPasswordUrl"`
-	VerificationUrl  string `dynamodbav:"verificationUrl"`
-	UserCount        int    `dynamodbav:"userCount"`
-	Created          string `dynamodbav:"created"`
+	types.ApplicationItem
 }
 
 func CreateApplication() (string, error) {
 	applicationId := common.GenerateToken()
-	item := ApplicationItem{
+	item := DdbApplicationItem{
 		Id:               applicationId,
 		SecondaryId:      "application",
-		ApplicationState: ACTIVE,
-		EmailFromName:    "",
-		ResetPasswordUrl: "",
-		VerificationUrl:  "",
-		UserCount:        0,
-		Created:          common.GetIsoString(),
+		ApplicationItem: types.ApplicationItem{
+			ApplicationState: ACTIVE,
+			EmailFromName:    "",
+			ResetPasswordUrl: "",
+			VerificationUrl:  "",
+			UserCount:        0,
+			Created:          common.GetIsoString(),
+		},
 	}
 
 	_, putItemErr := dynamodbPut(item)
@@ -43,16 +41,16 @@ func CreateApplication() (string, error) {
 	return applicationId, nil
 }
 
-func ReadApplication(applicationId string) (*ApplicationItem, error) {
+func ReadApplication(applicationId string) (*DdbApplicationItem, error) {
 	key := &KeyBasedStruct{
 		Id:          applicationId,
 		SecondaryId: "application",
 	}
 
-	result := &ApplicationItem{}
+	result := &DdbApplicationItem{}
 	_, getItemErr := dynamodbGetWrapper(key, result)
 	if getItemErr != nil {
-		return &ApplicationItem{}, getItemErr
+		return &DdbApplicationItem{}, getItemErr
 	}
 
 	return result, nil

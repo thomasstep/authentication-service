@@ -1,12 +1,12 @@
 package main
 
 import (
-	"golang.org/x/crypto/bcrypt"
-
 	"github.com/thomasstep/authentication-service/internal/adapters"
+	"github.com/thomasstep/authentication-service/internal/types"
 )
 
-func logic(applicationId string, email string, password string) error {
+func logic(applicationId string) (*types.ApplicationItem, error) {
 	// read application
-	return nil
+	applicationItem, readAppErr := adapters.ReadApplication(applicationId)
+	return &applicationItem.ApplicationItem, readAppErr
 }

@@ -72,7 +72,7 @@ func CreateEmailSignInRecord(applicationId string, userId string, email string, 
 	return nil
 }
 
-func CreateResetPasswordRecord(applicationId string, userId string, email string, passwordHash string) (string, error) {
+func CreateResetPasswordRecord(applicationId string, email string) (string, error) {
 	resetToken := common.GenerateEasyToken()
 	item := ResetTokenItem{
 		Id:          applicationId,
