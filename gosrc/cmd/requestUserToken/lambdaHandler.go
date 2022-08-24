@@ -16,6 +16,10 @@ type BodyStructure struct {
 	Password string `json:"password"`
 }
 
+type ResponseStructure struct {
+	Token string `json:"token"`
+}
+
 func lambdaAdapter(ctx context.Context, request events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
 	applicationId := request.PathParameters["applicationId"]
 	var body BodyStructure
@@ -24,13 +28,21 @@ func lambdaAdapter(ctx context.Context, request events.APIGatewayProxyRequest) (
 		panic(unmarshalErr)
 	}
 
-	err := logic(applicationId, body.Email, body.Password)
+	token, err := logic(applicationId, body.Email, body.Password)
 	if err != nil {
 		return events.APIGatewayProxyResponse{}, err
 	}
 
+	jsonBody, marshalErr := json.Marshal(&ResponseStructure{
+		Token: token,
+	})
+	if marshalErr != nil {
+		return events.APIGatewayProxyResponse{}, marshalErr
+	}
+
 	return events.APIGatewayProxyResponse{
-		StatusCode: 204,
+		StatusCode: 200,
+		Body:       string(jsonBody),
 	}, err
 }
 
