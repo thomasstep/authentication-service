@@ -13,16 +13,16 @@ const ACTIVE = "active"
 const SUSPENDED = "suspended"
 
 type DdbApplicationItem struct {
-	Id               string `dynamodbav:"id"`
-	SecondaryId      string `dynamodbav:"secondaryId"`
+	Id          string `dynamodbav:"id"`
+	SecondaryId string `dynamodbav:"secondaryId"`
 	types.ApplicationItem
 }
 
 func CreateApplication() (string, error) {
 	applicationId := common.GenerateToken()
 	item := DdbApplicationItem{
-		Id:               applicationId,
-		SecondaryId:      "application",
+		Id:          applicationId,
+		SecondaryId: "application",
 		ApplicationItem: types.ApplicationItem{
 			ApplicationState: ACTIVE,
 			EmailFromName:    "",
@@ -75,28 +75,45 @@ func UpdateUserCount(applicationId string, value int) error {
 	return nil
 }
 
-// func UpdateSignInMethods(applicationId string, userId string, signInMethod string) error {
-// 	key := &KeyBasedStruct{
-// 		Id:          applicationId,
-// 		SecondaryId: "application",
-// 	}
+func UpdateApplication(applicationId string, updated types.ApplicationItem) error {
+	key := &KeyBasedStruct{
+		Id:          applicationId,
+		SecondaryId: "application",
+	}
 
-// 	update := expression.Add(
-// 		expression.Name("methodsUsed"),
-// 		expression.Value(
-// 			&types.AttributeValueMemberSS{
-// 				Value: []string{signInMethod},
-// 			},
-// 		),
-// 	)
+	var updates expression.UpdateBuilder
+	if updated.ApplicationState != "" {
+		updates = updates.Add(
+			expression.Name("applicationState"),
+			expression.Value(updated.ApplicationState),
+		)
+	}
+	if updated.EmailFromName != "" {
+		updates = updates.Add(
+			expression.Name("emailFromName"),
+			expression.Value(updated.EmailFromName),
+		)
+	}
+	if updated.ResetPasswordUrl != "" {
+		updates = updates.Add(
+			expression.Name("resetPasswordUrl"),
+			expression.Value(updated.ResetPasswordUrl),
+		)
+	}
+	if updated.VerificationUrl != "" {
+		updates = updates.Add(
+			expression.Name("verificationUrl"),
+			expression.Value(updated.VerificationUrl),
+		)
+	}
 
-// 	_, updateItemErr := dynamodbUpdateWrapper(key, update)
-// 	if updateItemErr != nil {
-// 		return updateItemErr
-// 	}
+	_, updateItemErr := dynamodbUpdateWrapper(key, updates)
+	if updateItemErr != nil {
+		return updateItemErr
+	}
 
-// 	return nil
-// }
+	return nil
+}
 
 func DeleteApplication(applicationId string) error {
 	key := &KeyBasedStruct{

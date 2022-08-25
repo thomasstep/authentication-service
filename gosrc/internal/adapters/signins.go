@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/aws/aws-sdk-go-v2/feature/dynamodb/expression"
+	"go.uber.org/zap"
 
 	"github.com/thomasstep/authentication-service/internal/common"
 )
@@ -53,11 +54,11 @@ func CreateUnverifiedRecord(applicationId string, email string, passwordHash str
 	return verificationToken, nil
 }
 
-// Should this be exporting or called into another func that also adds signin method to user?
 func CreateEmailSignInRecord(applicationId string, userId string, email string, passwordHash string) error {
+	methodId := fmt.Sprintf("%s#%s", config.EmailSignInSortKey, email)
 	item := EmailSignInItem{
 		Id:                 applicationId,
-		SecondaryId:        fmt.Sprintf("%s#%s", config.EmailSignInSortKey, email),
+		SecondaryId:        methodId,
 		UserId:             userId,
 		PasswordHash:       passwordHash,
 		LastPasswordChange: common.GetIsoString(),
@@ -66,7 +67,16 @@ func CreateEmailSignInRecord(applicationId string, userId string, email string, 
 
 	_, putItemErr := dynamodbPutCheckSecId(item)
 	if putItemErr != nil {
+		logger.Error(
+			"Error adding email sign in record",
+			zap.Error(putItemErr),
+		)
 		return putItemErr
+	}
+
+	updateErr := updateSignInMethods(applicationId, userId, methodId)
+	if updateErr != nil {
+		return updateErr
 	}
 
 	return nil

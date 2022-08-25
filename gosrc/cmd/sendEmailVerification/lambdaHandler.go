@@ -15,18 +15,22 @@ func handleRequest(ctx context.Context, snsEvent events.SNSEvent) {
 	for _, record := range snsEvent.Records {
 		snsRecord := record.SNS
 		snsMessage := snsRecord.Message
-		var message adapters.ApplicationDeletedEvent
+		var message adapters.EmailVerificationEvent
 		unmarshalErr := json.Unmarshal([]byte(snsMessage), &message)
 		if unmarshalErr != nil {
 			logger.Error(unmarshalErr.Error())
 		}
 
 		applicationId := message.ApplicationId
-		logger.Info("Processing application deleted",
+		email := message.Email
+		token := message.VerificationToken
+		logger.Info("Processing email verification",
 			zap.String("applicationId", applicationId),
+			zap.String("email", email),
+			zap.String("token", token),
 		)
 
-		logic(applicationId)
+		logic(applicationId, email, token)
 	}
 }
 

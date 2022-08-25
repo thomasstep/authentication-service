@@ -5,6 +5,7 @@ import (
 
 	"github.com/aws/aws-sdk-go-v2/feature/dynamodb/expression"
 	ddbTypes "github.com/aws/aws-sdk-go-v2/service/dynamodb/types"
+	"go.uber.org/zap"
 
 	"github.com/thomasstep/authentication-service/internal/common"
 	"github.com/thomasstep/authentication-service/internal/types"
@@ -13,8 +14,8 @@ import (
 // For handling user entities
 
 type DdbUserItem struct {
-	Id               string `dynamodbav:"id"`
-	SecondaryId      string `dynamodbav:"secondaryId"`
+	Id          string `dynamodbav:"id"`
+	SecondaryId string `dynamodbav:"secondaryId"`
 	types.UserItem
 }
 
@@ -52,7 +53,7 @@ func ReadUser(applicationId string, userId string) (*DdbUserItem, error) {
 	return result, nil
 }
 
-func UpdateSignInMethods(applicationId string, userId string, signInMethod string) error {
+func updateSignInMethods(applicationId string, userId string, signInMethod string) error {
 	key := &KeyBasedStruct{
 		Id:          applicationId,
 		SecondaryId: fmt.Sprintf("%s#%s", config.UserSortKey, userId),
@@ -69,6 +70,10 @@ func UpdateSignInMethods(applicationId string, userId string, signInMethod strin
 
 	_, updateItemErr := dynamodbUpdateWrapper(key, update)
 	if updateItemErr != nil {
+		logger.Error(
+			"Error updating user sign in records",
+			zap.Error(updateItemErr),
+		)
 		return updateItemErr
 	}
 

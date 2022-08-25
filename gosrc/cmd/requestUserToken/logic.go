@@ -5,9 +5,9 @@ import (
 	"errors"
 	"time"
 
-	"golang.org/x/crypto/bcrypt"
-	"github.com/lestrrat-go/jwx/v2/jwt"
 	"github.com/lestrrat-go/jwx/v2/jwa"
+	"github.com/lestrrat-go/jwx/v2/jwt"
+	"golang.org/x/crypto/bcrypt"
 
 	"github.com/thomasstep/authentication-service/internal/adapters"
 	"github.com/thomasstep/authentication-service/internal/common"

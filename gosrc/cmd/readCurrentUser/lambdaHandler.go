@@ -12,7 +12,7 @@ import (
 )
 
 type ResponseStructure struct {
-	Id    string `json:"id"`
+	Id string `json:"id"`
 }
 
 func lambdaAdapter(ctx context.Context, request events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {

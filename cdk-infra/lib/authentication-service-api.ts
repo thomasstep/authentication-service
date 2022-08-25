@@ -338,17 +338,17 @@ export class Api extends Stack {
         verb: 'POST',
         resource: meResource,
       },
-      updateCurrentUser: {
-        lambdaConfig: {
-          ...baseLambdaConfig('updateCurrentUser'),
-        },
-        methodConfig: {
-          authorizationType: apigateway.AuthorizationType.CUSTOM,
-          authorizer,
-        },
-        verb: 'PUT',
-        resource: meResource,
-      },
+      // updateCurrentUser: {
+      //   lambdaConfig: {
+      //     ...baseLambdaConfig('updateCurrentUser'),
+      //   },
+      //   methodConfig: {
+      //     authorizationType: apigateway.AuthorizationType.CUSTOM,
+      //     authorizer,
+      //   },
+      //   verb: 'PUT',
+      //   resource: meResource,
+      // },
     };
 
     Object.entries(lambdas).forEach(([name, config]) => {
@@ -376,7 +376,7 @@ export class Api extends Stack {
         // 'requestResetPassword',
         'updatePassword',
         'readCurrentUser',
-        'updateCurrentUser',
+        // 'updateCurrentUser',
         // 'deleteCurrentUser',
       ],
       ddbEnvironmentVariableName,

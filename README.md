@@ -194,3 +194,4 @@ Configurage parts: `iss`, `aud` (will not be present if not configured)
 ### TODO
 
 - Write monitoring tests
+- Better go error handling

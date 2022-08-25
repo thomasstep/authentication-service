@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"encoding/json"
 
 	"github.com/thomasstep/authentication-service/internal/common"
 	"github.com/thomasstep/authentication-service/internal/types"
@@ -18,13 +17,9 @@ type BodyStructure struct {
 
 func lambdaAdapter(ctx context.Context, request events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
 	applicationId := request.PathParameters["applicationId"]
-	var body BodyStructure
-	unmarshalErr := json.Unmarshal([]byte(request.Body), &body)
-	if unmarshalErr != nil {
-		panic(unmarshalErr)
-	}
+	token := request.QueryStringParameters["token"]
 
-	err := logic(applicationId, body.Email, body.Password)
+	err := logic(applicationId, token)
 	if err != nil {
 		return events.APIGatewayProxyResponse{}, err
 	}

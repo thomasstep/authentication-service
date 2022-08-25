@@ -24,8 +24,8 @@ func handleRequest(ctx context.Context, snsEvent events.SNSEvent) {
 		applicationId := message.ApplicationId
 		email := message.Email
 		logger.Info("Processing request password reset",
-		zap.String("applicationId", applicationId),
-		zap.String("email", email),
+			zap.String("applicationId", applicationId),
+			zap.String("email", email),
 		)
 
 		logic(applicationId, email)

@@ -16,6 +16,7 @@ import (
 func logic(applicationId string) {
 	numBits := 2048
 	// Generate keys
+	// TODO can i use "github.com/lestrrat-go/jwx/v2/jwa" at all?
 	privateKey, privKeyErr := rsa.GenerateKey(rand.Reader, numBits)
 	if privKeyErr != nil {
 		panic(privKeyErr)

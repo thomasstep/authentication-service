@@ -12,7 +12,7 @@ import (
 )
 
 type BodyStructure struct {
-	Email    string `json:"email"`
+	Token    string `json:"token"`
 	Password string `json:"password"`
 }
 
@@ -24,7 +24,7 @@ func lambdaAdapter(ctx context.Context, request events.APIGatewayProxyRequest) (
 		panic(unmarshalErr)
 	}
 
-	err := logic(applicationId, body.Email, body.Password)
+	err := logic(applicationId, body.Token, body.Password)
 	if err != nil {
 		return events.APIGatewayProxyResponse{}, err
 	}

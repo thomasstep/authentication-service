@@ -17,17 +17,7 @@ type BodyStructure struct {
 }
 
 func lambdaAdapter(ctx context.Context, request events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
-	applicationId := request.PathParameters["applicationId"]
-	var body BodyStructure
-	unmarshalErr := json.Unmarshal([]byte(request.Body), &body)
-	if unmarshalErr != nil {
-		panic(unmarshalErr)
-	}
-
-	err := logic(applicationId, body.Email, body.Password)
-	if err != nil {
-		return events.APIGatewayProxyResponse{}, err
-	}
+	// TODO this currently does nothing on purpose
 
 	return events.APIGatewayProxyResponse{
 		StatusCode: 204,

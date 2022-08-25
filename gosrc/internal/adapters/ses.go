@@ -12,11 +12,11 @@ func sesSendEmail(address string, title string, htmlBody string) (*ses.SendEmail
 	sesClient := GetSesClient()
 
 	sendEmailRes, sendEmailErr := sesClient.SendEmail(context.TODO(), &ses.SendEmailInput{
-		Source:          aws.String(config.SourceEmailAddress),
+		Source: aws.String(config.SourceEmailAddress),
 		Destination: &types.Destination{
 			ToAddresses: []string{address},
 		},
-		Message:           &types.Message{
+		Message: &types.Message{
 			Subject: &types.Content{
 				Data: aws.String(title),
 			},
