@@ -86,7 +86,7 @@ func CreateResetPasswordRecord(applicationId string, email string) (string, erro
 	resetToken := common.GenerateEasyToken()
 	item := ResetTokenItem{
 		Id:          applicationId,
-		SecondaryId: fmt.Sprintf("%s#%s", config.ResetPasswordSortKey, email),
+		SecondaryId: fmt.Sprintf("%s#%s", config.ResetPasswordSortKey, resetToken),
 		Email:       email,
 		TTL:         time.Now().Add(config.VerificationTtl).Unix(),
 	}

@@ -29,7 +29,7 @@ func logic(applicationId string, token string) error {
 		}
 	}
 	// create user
-	userId, createErr := adapters.CreateUser(applicationId, []string{})
+	userId, createErr := adapters.CreateUser(applicationId)
 	if createErr != nil {
 		panic(createErr)
 	}
@@ -45,6 +45,6 @@ func logic(applicationId string, token string) error {
 	}
 	// delete unverified record
 	// Not checking deletion because we wouldn't want to panic now anyway
-	adapters.DeleteResetPasswordRecord(applicationId, token)
+	adapters.DeleteUnverifiedRecord(applicationId, token)
 	return nil
 }

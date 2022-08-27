@@ -2,6 +2,7 @@ package main
 
 import (
 	"crypto/x509"
+	"encoding/pem"
 	"errors"
 	"time"
 
@@ -31,25 +32,28 @@ func logic(applicationId string, email string, password string) (string, error) 
 	}
 	// read private key
 	content := adapters.ReadFile(common.GetPrivateKeyPath(applicationId))
-	privKey, privKeyParseErr := x509.ParsePKCS8PrivateKey(content)
+	pemBlock, _ := pem.Decode(content)
+
+	privKey, privKeyParseErr := x509.ParsePKCS8PrivateKey(pemBlock.Bytes)
 	if privKeyParseErr != nil {
 		panic(privKeyParseErr)
 	}
 
 	// create and sign jwt
-	tok, jwtErr := jwt.NewBuilder().
-		Issuer(`github.com/lestrrat-go/jwx`).
+	token, jwtErr := jwt.NewBuilder().
+		Issuer(config.TokenIssuer).
 		IssuedAt(time.Now()).
+		Subject(emailRecord.UserId).
+		Expiration(time.Now().Add(config.TokenExpirationTime)).
 		Build()
 	if jwtErr != nil {
 		panic(jwtErr)
 	}
-
-	// Sign a JWT!
-	signed, signErr := jwt.Sign(tok, jwt.WithKey(jwa.RS256, privKey))
+	signed, signErr := jwt.Sign(token, jwt.WithKey(jwa.RS256, privKey))
 	if signErr != nil {
 		panic(signErr)
 	}
+
 	// return jwt
 	return string(signed), nil
 }

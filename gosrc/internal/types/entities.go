@@ -11,7 +11,7 @@ type ApplicationItem struct {
 
 type UserItem struct {
 	// If methodsUsed changes names, the update expression(s) will also need to be edited
-	MethodsUsed []string `json:"methodsUsed" dynamodbav:"methodsUsed",stringset,omitemptyelem""`
+	MethodsUsed []string `json:"methodsUsed" dynamodbav:"methodsUsed,stringset,omitempty"`
 	LastSignIn  string   `json:"lastSignin" dynamodbav:"lastSignIn"`
 	Created     string   `json:"created" dynamodbav:"created"`
 }

@@ -19,13 +19,13 @@ type DdbUserItem struct {
 	types.UserItem
 }
 
-func CreateUser(applicationId string, methodsUsed []string) (string, error) {
+func CreateUser(applicationId string) (string, error) {
 	userId := common.GenerateToken()
 	item := DdbUserItem{
 		Id:          applicationId,
 		SecondaryId: fmt.Sprintf("%s#%s", config.UserSortKey, userId),
 		UserItem: types.UserItem{
-			MethodsUsed: methodsUsed,
+			MethodsUsed: nil,
 			LastSignIn:  common.GetIsoString(),
 			Created:     common.GetIsoString(),
 		},

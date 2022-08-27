@@ -40,7 +40,7 @@ func dynamodbPutWrapper(item interface{}, conditionExp *string) (*dynamodb.PutIt
 }
 
 func dynamodbPut(item interface{}) (*dynamodb.PutItemOutput, error) {
-	putItemRes, putItemErr := dynamodbPutWrapper(item, aws.String(""))
+	putItemRes, putItemErr := dynamodbPutWrapper(item, nil)
 
 	return putItemRes, putItemErr
 }
@@ -99,6 +99,13 @@ func dynamodbUpdateWrapper(key interface{}, update expression.UpdateBuilder) (*d
 		)
 		return &dynamodb.UpdateItemOutput{}, builderErr
 	}
+	// TODO delete this log
+	logger.Info(
+		"DDB Updates",
+		zap.Stringp("update", expr.Update()),
+		zap.Any("names", expr.Names()),
+		zap.Any("values", expr.Values()),
+	)
 
 	updateItemRes, updateItemErr := ddbClient.UpdateItem(context.TODO(), &dynamodb.UpdateItemInput{
 		TableName:                 aws.String(config.PrimaryTableName),
@@ -108,17 +115,7 @@ func dynamodbUpdateWrapper(key interface{}, update expression.UpdateBuilder) (*d
 		ExpressionAttributeValues: expr.Values(),
 	})
 	if updateItemErr != nil {
-		// if apiErr := new(types.ProvisionedThroughputExceededException); errors.As(err, &apiErr) {
-		// 	fmt.Println("throughput exceeded")
-		// } else if apiErr := new(types.ResourceNotFoundException); errors.As(err, &apiErr) {
-		// 	fmt.Println("resource not found")
-		// } else if apiErr := new(types.InternalServerError); errors.As(err, &apiErr) {
-		// 	fmt.Println("internal server error")
-		// } else {
-		// 	fmt.Println(err)
-		// }
-		// return
-		logger.Error("Failed to get item", zap.Error(updateItemErr))
+		logger.Error("Failed to update item", zap.Error(updateItemErr))
 		return &dynamodb.UpdateItemOutput{}, updateItemErr
 	}
 
@@ -141,7 +138,7 @@ func dynamodbDeleteWrapper(key interface{}) (*dynamodb.DeleteItemOutput, error) 
 		Key:       av,
 	})
 	if deleteItemErr != nil {
-		logger.Error("Failed to get item", zap.Error(deleteItemErr))
+		logger.Error("Failed to delete item", zap.Error(deleteItemErr))
 		return &dynamodb.DeleteItemOutput{}, deleteItemErr
 	}
 

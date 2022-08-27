@@ -83,25 +83,25 @@ func UpdateApplication(applicationId string, updated types.ApplicationItem) erro
 
 	var updates expression.UpdateBuilder
 	if updated.ApplicationState != "" {
-		updates = updates.Add(
+		updates = updates.Set(
 			expression.Name("applicationState"),
 			expression.Value(updated.ApplicationState),
 		)
 	}
 	if updated.EmailFromName != "" {
-		updates = updates.Add(
+		updates = updates.Set(
 			expression.Name("emailFromName"),
 			expression.Value(updated.EmailFromName),
 		)
 	}
 	if updated.ResetPasswordUrl != "" {
-		updates = updates.Add(
+		updates = updates.Set(
 			expression.Name("resetPasswordUrl"),
 			expression.Value(updated.ResetPasswordUrl),
 		)
 	}
 	if updated.VerificationUrl != "" {
-		updates = updates.Add(
+		updates = updates.Set(
 			expression.Name("verificationUrl"),
 			expression.Value(updated.VerificationUrl),
 		)

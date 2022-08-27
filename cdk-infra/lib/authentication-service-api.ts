@@ -20,6 +20,7 @@ const config = JSON.parse(contents);
 const goSrcDirectory = '../../gosrc';
 const ddbEnvironmentVariableName = 'PRIMARY_TABLE_NAME';
 const s3EnvironmentVariableName = 'PRIMARY_BUCKET_NAME';
+const sesEnvironmentVariableName = 'SOURCE_EMAIL_ADDRESS';
 const snsEnvironmentVariableName = 'PRIMARY_SNS_TOPIC_ARN';
 
 function connectDdbToLambdas(table: dynamodb.Table, lambdas: LambdasObject, names: string[], envVarName: string) {
@@ -87,6 +88,7 @@ export class Api extends Stack {
         environment: {
           CORS_ALLOW_ORIGIN_HEADER: config.corsAllowOriginHeader,
         },
+        timeout: Duration.seconds(5),
       }
     }
 
@@ -335,7 +337,7 @@ export class Api extends Stack {
           authorizationType: apigateway.AuthorizationType.CUSTOM,
           authorizer,
         },
-        verb: 'POST',
+        verb: 'GET',
         resource: meResource,
       },
       // updateCurrentUser: {
@@ -464,7 +466,7 @@ export class Api extends Stack {
 &Message=${passwordResetMessage}\
 &MessageAttributes.entry.1.Name=operation\
 &MessageAttributes.entry.1.Value.DataType=String\
-&MessageAttributes.entry.1.Value.StringValue=passwordReset`,
+&MessageAttributes.entry.1.Value.StringValue=requestPasswordReset`,
           },
           integrationResponses: [
             {
@@ -693,12 +695,14 @@ export class Api extends Stack {
     ];
 
     asyncLambdaNames.forEach((name) => {
+      // Add alarms if any of these fail
       const dlq = new sqs.Queue(this, `${name.kebabCase}-dlq`, {});
       const lambdaFunction = new lambda.Function(
         this,
         `${name.kebabCase}-lambda`,
         {
           ...baseLambdaConfig(name.camelCase),
+          timeout: Duration.seconds(20), // Giving background tasks a longer timeout
           deadLetterQueue: dlq,
         },
       );
@@ -726,7 +730,7 @@ export class Api extends Stack {
             resources: [config.sesEmailIdentityArn],
           }),
         );
-        // TODO add SES env var
+        lambdaFunction.addEnvironment(sesEnvironmentVariableName, config.sourceEmailAddress);
       }
 
       if (name.putsS3) {

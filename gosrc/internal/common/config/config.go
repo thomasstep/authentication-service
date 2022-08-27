@@ -27,7 +27,7 @@ type ConfigStruct struct {
 	// Config from config.json
 	CorsAllowOriginHeader string
 	TokenIssuer           string
-	TokenExpirationTime   string
+	TokenExpirationTime   time.Duration // To be used while adding to time
 	SourceEmailAddress    string
 }
 
@@ -39,6 +39,11 @@ func GetConfig() *ConfigStruct {
 		verificationTtl, verTtlParseErr := time.ParseDuration("15m")
 		if verTtlParseErr != nil {
 			panic(verTtlParseErr)
+		}
+
+		tokenExpiration, tokenExpParseErr := time.ParseDuration(common.GetEnv("TOKEN_EXPIRATION_TIME", "6h"))
+		if tokenExpParseErr != nil {
+			panic(tokenExpParseErr)
 		}
 
 		Config = &ConfigStruct{
@@ -53,7 +58,7 @@ func GetConfig() *ConfigStruct {
 			PrimaryTopicArn:       common.GetEnv("PRIMARY_SNS_TOPIC_ARN", ""),
 			CorsAllowOriginHeader: common.GetEnv("CORS_ALLOW_ORIGIN_HEADER", ""),
 			TokenIssuer:           common.GetEnv("TOKEN_ISSUER", ""),
-			TokenExpirationTime:   common.GetEnv("TOKEN_EXPIRATION_TIME", "6h"),
+			TokenExpirationTime:   tokenExpiration,
 			SourceEmailAddress:    common.GetEnv("SOURCE_EMAIL_ADDRESS", ""),
 		}
 	})

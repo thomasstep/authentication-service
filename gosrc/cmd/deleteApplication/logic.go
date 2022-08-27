@@ -7,7 +7,7 @@ import (
 	"github.com/thomasstep/authentication-service/internal/types"
 )
 
-func logic(applicationId string, email string, password string) error {
+func logic(applicationId string) error {
 	// read application
 	applicationItem, readAppErr := adapters.ReadApplication(applicationId)
 	if readAppErr != nil {

@@ -6,6 +6,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/ses"
 	"github.com/aws/aws-sdk-go-v2/service/ses/types"
+	"go.uber.org/zap"
 )
 
 func sesSendEmail(address string, title string, htmlBody string) (*ses.SendEmailOutput, error) {
@@ -28,6 +29,10 @@ func sesSendEmail(address string, title string, htmlBody string) (*ses.SendEmail
 		},
 	})
 	if sendEmailErr != nil {
+		logger.Error(
+			"Error sending email",
+			zap.Error(sendEmailErr),
+		)
 		return &ses.SendEmailOutput{}, sendEmailErr
 	}
 

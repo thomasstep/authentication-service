@@ -11,24 +11,16 @@ import (
 	"github.com/aws/aws-lambda-go/lambda"
 )
 
-type BodyStructure struct {
-	Email    string `json:"email"`
-	Password string `json:"password"`
-}
-
 type ResponseStructure struct {
 	Token string `json:"token"`
 }
 
 func lambdaAdapter(ctx context.Context, request events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
 	applicationId := request.PathParameters["applicationId"]
-	var body BodyStructure
-	unmarshalErr := json.Unmarshal([]byte(request.Body), &body)
-	if unmarshalErr != nil {
-		panic(unmarshalErr)
-	}
+	email := request.QueryStringParameters["email"]
+	password := request.QueryStringParameters["password"]
 
-	token, err := logic(applicationId, body.Email, body.Password)
+	token, err := logic(applicationId, email, password)
 	if err != nil {
 		return events.APIGatewayProxyResponse{}, err
 	}
