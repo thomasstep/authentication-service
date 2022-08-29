@@ -2,23 +2,12 @@
 
 # Getting Started
 
+Prerequisite to build is Docker since the go code is bundled using a Docker image.
+
 ```sh
+cd infra
 cp config.json.example config.json
-# Fill in appropriate config
-cd src/shared
-# I link the config files together so I only need to keep track of the top level one
-# I am open to a better way of doing this
-ln -s ../../config.json
-cd ../..
-# Install shared directory packages
-# Make sure this is run on a Linux machine or bcrypt will throw errors whenever it is run in Lambda
-cd src/shared
-npm install
-# Install jose in the token/get endpoint handler
-cd src/v1/applications/\{applicationId\}/users/token/get
-npm install
-# Install project-level packages
-cd ../..
+# Fill in config as needed; see src/internal/common/config.go on how it is used
 npm install
 cdk synth
 cdk deploy --all
@@ -45,16 +34,16 @@ As a user of the authentication service I would like to be able to
 
 This will be a mash of the current data model with small adjustments for the new API.
 
-| Partition key       | Sort key               | Attributes     |
-| ------------------- | ---------------------- | -------------- |
-| `<app-id>`          | `application`          | `{ applicationState: enum{active, suspended}, emailFromName: string, resetPasswordUrl: string, verificationUrl: string, userCount: number, jwksUri: string, created: timestamp }` |
-| `<app-id>`          | `user#<id>`            | `{ methodsUsed: []signinMethods{email#<email>, phone#<number>, google#<googleId>, etc.}, lastSignin: timestamp, created: timestamp }` |
-| `<app-id>`          | `unverified#<token>`   | `{ email: string, passwordHash: string, ttl: timestamp }` |
-| `<app-id>`          | `email#<email>`    | `{ userId: string, passwordHash: string, lastPasswordChange: timestamp, created: timestamp }` |
-| `<app-id>`          | `reset#<token>`        | `{ email: string, ttl: timestamp }` |
-| `<app-id>`          | `phone#<number>` | `{ userId: string, created: timestamp }` |
-| `<app-id>`          | `google#<googleId>`    | `{ userId: string, created: timestamp }` |
-| `<app-id>`          | `passwordless#<token>` | `{ userId: string, ttl: timestamp }` |
+| Partition key       | Sort key                 | Attributes     |
+| ------------------- | ------------------------ | -------------- |
+| `<app-id>`          | `application`            | `{ applicationState: enum{active, suspended}, emailFromName: string, resetPasswordUrl: string, verificationUrl: string, userCount: number, jwksUri: string, created: timestamp }` |
+| `<app-id>`          | `user#<id>`              | `{ methodsUsed: []signinMethods{email#<email>, phone#<number>, google#<googleId>, etc.}, lastSignin: timestamp, created: timestamp }` |
+| `<app-id>`          | `verification#<token>`   | `{ email: string, passwordHash: string, ttl: timestamp }` |
+| `<app-id>`          | `email#<email>`          | `{ userId: string, passwordHash: string, lastPasswordChange: timestamp, created: timestamp }` |
+| `<app-id>`          | `reset#<token>`          | `{ email: string, ttl: timestamp }` |
+| `<app-id>`          | `phone#<number>`         | `{ userId: string, created: timestamp }` |
+| `<app-id>`          | `google#<googleId>`      | `{ userId: string, created: timestamp }` |
+| `<app-id>`          | `passwordless#<token>`   | `{ userId: string, ttl: timestamp }` |
 <!-- | `<app-id>`          | `refresh#<token>`      | `{ email: string, ttl: timestamp }` | -->
 
 Changes from the current data model:
@@ -205,3 +194,4 @@ Configurage parts: `iss`, `aud` (will not be present if not configured)
 ### TODO
 
 - Write monitoring tests
+- Better go error handling
