@@ -14,12 +14,12 @@ const config = JSON.parse(contents);
 
 const app = new cdk.App();
 
-const tables = new Tables(app, 'authentication-service-go-tables', {
+const tables = new Tables(app, 'authentication-service-tables', {
   env: config.cdkEnvironment,
 });
-const buckets = new Bucket(app, 'authentication-service-go-buckets', {
+const buckets = new Bucket(app, 'authentication-service-buckets', {
   env: config.cdkEnvironment,});
-new Api(app, 'authentication-service-go-api', {
+new Api(app, 'authentication-service-api', {
   env: config.cdkEnvironment,
   primaryTable: tables.primaryTable,
   primaryBucket: buckets.primaryBucket,

@@ -17,7 +17,7 @@ const filePath = path.join(process.cwd(), 'config.json');
 const contents = fs.readFileSync(filePath, 'utf8');
 const config = JSON.parse(contents);
 
-const goSrcDirectory = '../../gosrc';
+const srcDirectory = '../../src';
 const ddbEnvironmentVariableName = 'PRIMARY_TABLE_NAME';
 const s3EnvironmentVariableName = 'PRIMARY_BUCKET_NAME';
 const sesEnvironmentVariableName = 'SOURCE_EMAIL_ADDRESS';
@@ -75,7 +75,7 @@ export class Api extends Stack {
         handler: 'main', // Because the build output is called main
         runtime: lambda.Runtime.GO_1_X,
         logRetention: logs.RetentionDays.ONE_WEEK,
-        code: lambda.Code.fromAsset(path.join(__dirname, goSrcDirectory), {
+        code: lambda.Code.fromAsset(path.join(__dirname, srcDirectory), {
           bundling: {
             image: lambda.Runtime.GO_1_X.bundlingImage,
             user: "root",

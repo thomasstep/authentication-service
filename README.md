@@ -5,9 +5,9 @@
 Prerequisite to build is Docker since the go code is bundled using a Docker image.
 
 ```sh
-cd cdk-infra
+cd infra
 cp config.json.example config.json
-# Fill in config as needed; see gosrc/internal/common/config.go on how it is used
+# Fill in config as needed; see src/internal/common/config.go on how it is used
 npm install
 cdk synth
 cdk deploy --all
