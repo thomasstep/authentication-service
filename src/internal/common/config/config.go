@@ -25,7 +25,7 @@ type ConfigStruct struct {
 	PrimaryTopicArn string
 
 	// Config from config.json
-	CorsAllowOriginHeader string
+	CorsAllowOriginHeader string // This is included in the config but is primarily used in the lambdaHelpers.LamdbaWrapper func
 	TokenIssuer           string
 	TokenExpirationTime   time.Duration // To be used while adding to time
 	SourceEmailAddress    string

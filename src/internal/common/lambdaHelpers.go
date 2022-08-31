@@ -14,6 +14,9 @@ func LamdbaWrapper(handler types.HandlerSignature) types.HandlerSignature {
 	return func(ctx context.Context, request events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
 		res, err := handler(ctx, request)
 
+		// This value is also in config but can not be used here due to a circular dependency
+		corsAllowOriginHeader := GetEnv("CORS_ALLOW_ORIGIN_HEADER", "")
+
 		if err != nil {
 			var exstUsrErr *types.ExistingUsersError
 			var inErr *types.InputError
@@ -47,7 +50,16 @@ func LamdbaWrapper(handler types.HandlerSignature) types.HandlerSignature {
 			return events.APIGatewayProxyResponse{
 				StatusCode: statusCode,
 				Body:       string(jsonBody),
+				Headers:    map[string]string{
+					"Access-Control-Allow-Origin": corsAllowOriginHeader,
+					"Access-Control-Allow-Credentials": "true",
+				},
 			}, nil
+		}
+
+		res.Headers = map[string]string{
+			"Access-Control-Allow-Origin": corsAllowOriginHeader,
+			"Access-Control-Allow-Credentials": "true",
 		}
 
 		return res, nil

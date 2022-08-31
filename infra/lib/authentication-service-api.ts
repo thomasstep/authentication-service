@@ -129,6 +129,16 @@ export class Api extends Stack {
       },
     });
 
+    // This sends CORS headers with lambda authorizer response
+    new apigateway.GatewayResponse(this, 'unauthorized-gateway-response', {
+      restApi: restApi,
+      type: apigateway.ResponseType.UNAUTHORIZED,
+      responseHeaders: {
+        'method.response.header.Access-Control-Allow-Origin': `'${config.corsAllowOriginHeader}'`,
+        'method.response.header.Access-Control-Allow-Credentials': "'true'",
+      },
+    });
+
     // API key
     const apiKey = restApi.addApiKey('api-key');
     const usagePlan = new apigateway.UsagePlan(this, 'usage-plan', {
