@@ -18,15 +18,12 @@ type ResponseStructure struct {
 func lambdaAdapter(ctx context.Context, request events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
 	applicationId := request.PathParameters["applicationId"]
 
-	requestContext := request.RequestContext
-	authorizer := requestContext.Authorizer
-	userId := authorizer["userId"].(string)
-	userInfo, err := logic(userId, applicationId)
+	userId, err := logic(applicationId, request.QueryStringParameters)
 	if err != nil {
 		return events.APIGatewayProxyResponse{}, err
 	}
 
-	jsonBody, marshalErr := json.Marshal(userInfo)
+	jsonBody, marshalErr := json.Marshal(&ResponseStructure{Id: userId})
 	if marshalErr != nil {
 		return events.APIGatewayProxyResponse{}, marshalErr
 	}
@@ -34,7 +31,7 @@ func lambdaAdapter(ctx context.Context, request events.APIGatewayProxyRequest) (
 	return events.APIGatewayProxyResponse{
 		StatusCode: 200,
 		Body:       string(jsonBody),
-	}, nil
+	}, err
 }
 
 func getLambdaHandler() types.HandlerSignature {

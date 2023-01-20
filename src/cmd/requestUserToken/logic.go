@@ -18,7 +18,7 @@ import (
 func logic(applicationId string, email string, password string) (string, error) {
 	// read email sign in
 	emailRecord, readErr := adapters.ReadEmailSignInRecord(applicationId, email)
-	if readErr != nil {
+	if readErr != nil || emailRecord.UserId == "" {
 		return "", &types.MissingResourceError{
 			Err: errors.New("Could not find user with that email."),
 		}

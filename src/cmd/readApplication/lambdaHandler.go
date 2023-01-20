@@ -11,11 +11,6 @@ import (
 	"github.com/aws/aws-lambda-go/lambda"
 )
 
-type BodyStructure struct {
-	Email    string `json:"email"`
-	Password string `json:"password"`
-}
-
 func lambdaAdapter(ctx context.Context, request events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
 	applicationId := request.PathParameters["applicationId"]
 

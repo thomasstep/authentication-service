@@ -18,3 +18,5 @@ src/shared/config.json
 
 authentication-service.key
 authentication-service.key.pub
+
+.DS_Store
