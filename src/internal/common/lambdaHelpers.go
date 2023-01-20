@@ -36,7 +36,7 @@ func LamdbaWrapper(handler types.HandlerSignature) types.HandlerSignature {
 			} else if errors.As(err, &UnauthErr) {
 				statusCode = 401
 			} else {
-				// If it's not a customer error, then let it fly
+				// If it's not a known error, then let it fly
 				return events.APIGatewayProxyResponse{}, err
 			}
 
@@ -50,15 +50,15 @@ func LamdbaWrapper(handler types.HandlerSignature) types.HandlerSignature {
 			return events.APIGatewayProxyResponse{
 				StatusCode: statusCode,
 				Body:       string(jsonBody),
-				Headers:    map[string]string{
-					"Access-Control-Allow-Origin": corsAllowOriginHeader,
+				Headers: map[string]string{
+					"Access-Control-Allow-Origin":      corsAllowOriginHeader,
 					"Access-Control-Allow-Credentials": "true",
 				},
 			}, nil
 		}
 
 		res.Headers = map[string]string{
-			"Access-Control-Allow-Origin": corsAllowOriginHeader,
+			"Access-Control-Allow-Origin":      corsAllowOriginHeader,
 			"Access-Control-Allow-Credentials": "true",
 		}
 

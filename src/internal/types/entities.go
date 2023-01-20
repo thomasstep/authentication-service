@@ -15,3 +15,8 @@ type UserItem struct {
 	LastSignIn  string   `json:"lastSignin" dynamodbav:"lastSignIn"`
 	Created     string   `json:"created" dynamodbav:"created"`
 }
+
+type UserInfo struct {
+	Id    string `json:"id"`
+	Email string `json:"email,omitempty"`
+}

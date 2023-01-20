@@ -90,6 +90,22 @@ All calls require an API key unless otherwise noted. The endpoints that are not 
   - Check for user conflicts
   - Create unverified item and send verification email
   - Response: no content
+- `GET /applications/{applicationId}/users`
+  - Get a user
+  - Does not required an API key
+  - `application/x-www-form-urlencoded` Payload:
+    ```
+    ?email=email@address.com
+    OR
+    ?phone=555-555-5555
+    ```
+  - Get a user based on a main identifier
+  - Response Payload:
+    ```json
+    {
+      "id": "<guid>"
+    }
+    ```
 - `GET /applications/{applicationId}/users/verification`
   - Verify a new user
   - Does not require an API key
@@ -172,7 +188,7 @@ All calls require an API key unless otherwise noted. The endpoints that are not 
 
 #### Token Structure
 
-Configurage parts: `iss`, `aud` (will not be present if not configured)
+Configuration parts: `iss`, `aud` (will not be present if not configured)
 
 ```json
 {
@@ -195,3 +211,5 @@ Configurage parts: `iss`, `aud` (will not be present if not configured)
 
 - Write monitoring tests
 - Better go error handling
+- Don't let duplicate emails signup
+- Should GET /users?email be behind an API key?

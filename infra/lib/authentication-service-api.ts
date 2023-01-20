@@ -293,6 +293,19 @@ export class Api extends Stack {
         verb: 'POST',
         resource: usersResource,
       },
+      readUser: {
+        lambdaConfig: {
+          ...baseLambdaConfig('readUser'),
+        },
+        methodConfig: {
+          requestParameters: {
+            'method.request.querystring.email': false,
+          },
+          requestValidator: createdRequestValidators['validateParams'],
+        },
+        verb: 'GET',
+        resource: usersResource,
+      },
       verifyUser: {
         lambdaConfig: {
           ...baseLambdaConfig('verifyUser'),
@@ -383,6 +396,7 @@ export class Api extends Stack {
         'updateApplication',
         'deleteApplication',
         'createUser',
+        'readUser',
         'verifyUser',
         'requestUserToken',
         // 'requestResetPassword',
@@ -408,9 +422,7 @@ export class Api extends Stack {
 
     /**************************************************************************
      *
-     * Create async Lambdas in this stack. They use the shared layer
-     * and I do not want to introduce that cross-stack dependency because
-     * then I can not update the layer
+     * Create async Lambdas
      *
      *************************************************************************/
 
