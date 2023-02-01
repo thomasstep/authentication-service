@@ -211,5 +211,6 @@ Configuration parts: `iss`, `aud` (will not be present if not configured)
 
 - Write monitoring tests
 - Better go error handling
-- Don't let duplicate emails signup
-- Should GET /users?email be behind an API key?
+- Should GET /users be behind an API key?
+- Refactor types to be more like elsewhere
+  - There are types then there are DDB types and adapters handle translation between the two

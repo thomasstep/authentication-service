@@ -11,19 +11,15 @@ import (
 	"github.com/aws/aws-lambda-go/lambda"
 )
 
-type ResponseStructure struct {
-	Id string `json:"id"`
-}
-
 func lambdaAdapter(ctx context.Context, request events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
 	applicationId := request.PathParameters["applicationId"]
 
-	userId, err := logic(applicationId, request.QueryStringParameters)
+	userInfo, err := logic(applicationId, request.QueryStringParameters)
 	if err != nil {
 		return events.APIGatewayProxyResponse{}, err
 	}
 
-	jsonBody, marshalErr := json.Marshal(&ResponseStructure{Id: userId})
+	jsonBody, marshalErr := json.Marshal(userInfo)
 	if marshalErr != nil {
 		return events.APIGatewayProxyResponse{}, marshalErr
 	}
