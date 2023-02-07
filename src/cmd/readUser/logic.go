@@ -12,7 +12,7 @@ func logic(applicationId string, identifiers map[string]string) (*types.UserInfo
 	// attempt to find user by an identifier
 	userInfo := types.UserInfo{}
 	// TODO there will need to be refactoring whenever other signin methods are supported
-	email := identifiers["email"]
+	email := strings.ToLower(identifiers["email"])
 	isValidEmail := false
 	if len(email) > 0 {
 		isValidEmail = true

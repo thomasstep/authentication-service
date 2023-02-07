@@ -4,6 +4,7 @@ import (
 	"crypto/x509"
 	"encoding/pem"
 	"errors"
+	"strings"
 	"time"
 
 	"github.com/lestrrat-go/jwx/v2/jwa"
@@ -16,8 +17,9 @@ import (
 )
 
 func logic(applicationId string, email string, password string) (string, error) {
+	lowerCaseEmail := strings.ToLower(email)
 	// read email sign in
-	emailRecord, readErr := adapters.ReadEmailSignInRecord(applicationId, email)
+	emailRecord, readErr := adapters.ReadEmailSignInRecord(applicationId, lowerCaseEmail)
 	if readErr != nil || emailRecord.UserId == "" {
 		return "", &types.MissingResourceError{
 			Err: errors.New("Could not find user with that email."),

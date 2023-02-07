@@ -1,12 +1,15 @@
 package main
 
 import (
+	"strings"
+
 	"github.com/thomasstep/authentication-service/internal/adapters"
 )
 
 func logic(applicationId string, email string) {
+	lowerCaseEmail := strings.ToLower(email)
 	// create reset token record
-	resetToken, createRecordErr := adapters.CreateResetPasswordRecord(applicationId, email)
+	resetToken, createRecordErr := adapters.CreateResetPasswordRecord(applicationId, lowerCaseEmail)
 	if createRecordErr != nil {
 		panic(createRecordErr)
 	}
@@ -16,5 +19,5 @@ func logic(applicationId string, email string) {
 		panic(readAppErr)
 	}
 	// send reset password email
-	adapters.SendResetPasswordEmail(email, resetToken, applicationItem.ResetPasswordUrl)
+	adapters.SendResetPasswordEmail(lowerCaseEmail, resetToken, applicationItem.ResetPasswordUrl)
 }

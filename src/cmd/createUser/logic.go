@@ -2,6 +2,7 @@ package main
 
 import (
 	"errors"
+	"strings"
 
 	"golang.org/x/crypto/bcrypt"
 
@@ -10,7 +11,8 @@ import (
 )
 
 func logic(applicationId string, email string, password string) error {
-	emailRecord, err := adapters.ReadEmailSignInRecord(applicationId, email)
+	lowerCaseEmail := strings.ToLower(email)
+	emailRecord, err := adapters.ReadEmailSignInRecord(applicationId, lowerCaseEmail)
 	if err != nil {
 		logger.Error(err.Error())
 		panic(err)
@@ -31,14 +33,14 @@ func logic(applicationId string, email string, password string) error {
 
 	verificationToken, createErr := adapters.CreateUnverifiedRecord(
 		applicationId,
-		email,
+		lowerCaseEmail,
 		string(passwordHash),
 	)
 	if createErr != nil {
 		panic(createErr)
 	}
 
-	emitErr := adapters.EmitEmailVerificationEvent(applicationId, email, verificationToken)
+	emitErr := adapters.EmitEmailVerificationEvent(applicationId, lowerCaseEmail, verificationToken)
 	if emitErr != nil {
 		panic(emitErr)
 	}

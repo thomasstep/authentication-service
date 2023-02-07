@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"encoding/json"
 
 	"github.com/thomasstep/authentication-service/internal/common"
 	"github.com/thomasstep/authentication-service/internal/types"
@@ -21,7 +20,7 @@ func lambdaAdapter(ctx context.Context, request events.APIGatewayProxyRequest) (
 
 	return events.APIGatewayProxyResponse{
 		StatusCode: 204,
-	}, err
+	}, nil
 }
 
 func getLambdaHandler() types.HandlerSignature {
