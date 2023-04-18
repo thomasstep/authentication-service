@@ -24,8 +24,9 @@ As a user of the authentication service I would like to be able to
 - sign in users to my applications
 - allow my users to reset their passwords
   - still send tokens to verify resetting passwords by email
-- store arbitrary user metadata like a phone number and full name
+- give the appearance of continual authentication by using refresh tokens
 - Future Improvements:
+  - store arbitrary user metadata like a phone number and full name
   - passwordless sign ins
   - third party oauth
   - creating service accounts
@@ -44,7 +45,7 @@ This will be a mash of the current data model with small adjustments for the new
 | `<app-id>`          | `phone#<number>`         | `{ userId: string, created: timestamp }` |
 | `<app-id>`          | `google#<googleId>`      | `{ userId: string, created: timestamp }` |
 | `<app-id>`          | `passwordless#<token>`   | `{ userId: string, ttl: timestamp }` |
-<!-- | `<app-id>`          | `refresh#<token>`      | `{ email: string, ttl: timestamp }` | -->
+| `<app-id>`          | `refreshToken#<token>`   | `{ userId: string, ttl: timestamp }` |
 
 Changes from the current data model:
 - Application profiles
@@ -135,6 +136,8 @@ All calls require an API key unless otherwise noted. The endpoints that are not 
     ```
     ?email=email@address.com&password=pass
     OR
+    ?refreshToken=refreshToken
+    OR
     ?otp=token
     ```
   - If `email` and `password`, verify against hash
@@ -142,7 +145,8 @@ All calls require an API key unless otherwise noted. The endpoints that are not 
   - Response Payload:
     ```json
     {
-      "token": "asdf"
+      "token": "asdf",
+      "refreshToken": "qwerty"
     }
     ```
 - `GET /applications/{applicationId}/users/password/reset`

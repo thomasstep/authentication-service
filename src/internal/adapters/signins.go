@@ -36,6 +36,13 @@ type ResetTokenItem struct {
 	TTL         int64  `dynamodbav:"ttl"`
 }
 
+type RefreshTokenItem struct {
+	Id          string `dynamodbav:"id"`
+	SecondaryId string `dynamodbav:"secondaryId"`
+	UserId      string `dynamodbav:"userId"`
+	TTL         int64  `dynamodbav:"ttl"`
+}
+
 func CreateUnverifiedRecord(applicationId string, email string, passwordHash string) (string, error) {
 	verificationToken := common.GenerateEasyToken()
 	item := EmailVerificationItem{
@@ -99,6 +106,27 @@ func CreateResetPasswordRecord(applicationId string, email string) (string, erro
 	return resetToken, nil
 }
 
+func CreateRefreshTokenRecord(applicationId string, userId string, refreshToken string) error {
+	methodId := fmt.Sprintf("%s#%s", config.RefreshTokenSortKey, refreshToken)
+	item := RefreshTokenItem{
+		Id:          applicationId,
+		SecondaryId: methodId,
+		UserId:      userId,
+		TTL:         time.Now().Add(config.RefreshTokenExpirationTime).Unix(),
+	}
+
+	_, putItemErr := dynamodbPutCheckSecId(item)
+	if putItemErr != nil {
+		logger.Error(
+			"Error adding refresh token record",
+			zap.Error(putItemErr),
+		)
+		return putItemErr
+	}
+
+	return nil
+}
+
 func ReadUnverifiedRecord(applicationId string, token string) (*EmailVerificationItem, error) {
 	key := &KeyBasedStruct{
 		Id:          applicationId,
@@ -136,6 +164,20 @@ func ReadResetPasswordRecord(applicationId string, token string) (*ResetTokenIte
 	_, getItemErr := dynamodbGetWrapper(key, result)
 	if getItemErr != nil {
 		return &ResetTokenItem{}, getItemErr
+	}
+
+	return result, nil
+}
+
+func ReadRefreshTokenRecord(applicationId string, refreshToken string) (*RefreshTokenItem, error) {
+	key := &KeyBasedStruct{
+		Id:          applicationId,
+		SecondaryId: fmt.Sprintf("%s#%s", config.RefreshTokenSortKey, refreshToken),
+	}
+	result := &RefreshTokenItem{}
+	_, getItemErr := dynamodbGetWrapper(key, result)
+	if getItemErr != nil {
+		return &RefreshTokenItem{}, getItemErr
 	}
 
 	return result, nil
@@ -190,6 +232,19 @@ func DeleteResetPasswordRecord(applicationId string, token string) error {
 	key := &KeyBasedStruct{
 		Id:          applicationId,
 		SecondaryId: fmt.Sprintf("%s#%s", config.ResetPasswordSortKey, token),
+	}
+	_, putItemErr := dynamodbDeleteWrapper(key)
+	if putItemErr != nil {
+		return putItemErr
+	}
+
+	return nil
+}
+
+func DeleteRefreshTokenRecord(applicationId string, refreshToken string) error {
+	key := &KeyBasedStruct{
+		Id:          applicationId,
+		SecondaryId: fmt.Sprintf("%s#%s", config.RefreshTokenSortKey, refreshToken),
 	}
 	_, putItemErr := dynamodbDeleteWrapper(key)
 	if putItemErr != nil {

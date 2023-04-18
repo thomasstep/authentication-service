@@ -12,21 +12,24 @@ import (
 )
 
 type ResponseStructure struct {
-	Token string `json:"token"`
+	Token        string `json:"token"`
+	RefreshToken string `json:"refreshToken"`
 }
 
 func lambdaAdapter(ctx context.Context, request events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
 	applicationId := request.PathParameters["applicationId"]
 	email := request.QueryStringParameters["email"]
 	password := request.QueryStringParameters["password"]
+	reauthRefreshToken := request.QueryStringParameters["refreshToken"]
 
-	token, err := logic(applicationId, email, password)
+	token, refreshToken, err := logic(applicationId, email, password, reauthRefreshToken)
 	if err != nil {
 		return events.APIGatewayProxyResponse{}, err
 	}
 
 	jsonBody, marshalErr := json.Marshal(&ResponseStructure{
-		Token: token,
+		Token:        token,
+		RefreshToken: refreshToken,
 	})
 	if marshalErr != nil {
 		return events.APIGatewayProxyResponse{}, marshalErr

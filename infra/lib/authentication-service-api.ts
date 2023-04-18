@@ -326,6 +326,7 @@ export class Api extends Stack {
             CORS_ALLOW_ORIGIN_HEADER: config.corsAllowOriginHeader, // Don't want to overwrite this
             TOKEN_ISSUER: config.tokenIssuer,
             TOKEN_EXPIRATION_TIME: config.tokenExpirationTime,
+            REFRESH_TOKEN_EXPIRATION_TIME: config.refreshTokenExpirationTime,
           },
         },
         methodConfig: {
